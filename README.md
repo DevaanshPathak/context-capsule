@@ -10,6 +10,8 @@ More detailed docs live in [`docs/`](docs/README.md).
 
 ![Context Capsule overview](image.png)
 
+The Chromium extension includes branded toolbar icons in the standard 16, 32, 48, and 128 pixel sizes so the unpacked demo looks finished in the browser UI.
+
 ## Quality-of-Life Improvements
 
 - One hotkey replaces the entire copy -> switch -> format -> paste routine. Capture happens instantly without leaving the page.
