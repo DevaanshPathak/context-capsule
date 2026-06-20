@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Context Capsule Demo Page</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f6f4ef;
+        color: #1f2933;
+      }
+
+      main {
+        max-width: 840px;
+        margin: 0 auto;
+        padding: 42px 20px;
+      }
+
+      header {
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 34px;
+        letter-spacing: 0;
+      }
+
+      p {
+        line-height: 1.65;
+      }
+
+      .sample {
+        margin-top: 22px;
+        padding: 22px;
+        border: 1px solid #d7d0c2;
+        border-radius: 8px;
+        background: #fffdf8;
+      }
+
+      .checklist {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .checklist li {
+        padding: 12px 14px;
+        border-left: 4px solid #315b96;
+        background: #ffffff;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #171819;
+          color: #ece7dc;
+        }
+
+        .sample,
+        .checklist li {
+          border-color: #44413b;
+          background: #242526;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Context Capsule Demo Page</h1>
+        <p>Select part of the sample paragraph, run the capture hotkey or popup button, then paste into any editor.</p>
+      </header>
+
+      <section class="sample">
+        <h2>Sample Research Note</h2>
+        <p>
+          Native messaging lets a browser extension pass page context to a local process. Context Capsule uses that
+          bridge to capture the active page title, URL, selected text, and clipboard fallback, then stores a recoverable
+          history entry after copying a clean markdown block.
+        </p>
+      </section>
+
+      <ul class="checklist">
+        <li>With selected text, the pasted block should contain this page title, this local URL, and only the selection.</li>
+        <li>With no selected text, the pasted block should use whatever was already on your clipboard.</li>
+        <li>The popup history should show this capture and let you copy, pin, delete, or clear it.</li>
+      </ul>
+    </main>
+  </body>
+</html>

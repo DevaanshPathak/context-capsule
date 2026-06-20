@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Context Capsule</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Context Capsule</h1>
+        <p id="status" role="status">Loading...</p>
+      </div>
+      <button id="refresh" class="icon-button" type="button" title="Refresh history" aria-label="Refresh history">Refresh</button>
+    </header>
+
+    <main>
+      <section class="stats-grid" aria-label="History summary">
+        <article>
+          <strong id="stat-total">0</strong>
+          <span>Total</span>
+        </article>
+        <article>
+          <strong id="stat-pinned">0</strong>
+          <span>Pinned</span>
+        </article>
+        <article>
+          <strong id="stat-fallback">0</strong>
+          <span>Fallbacks</span>
+        </article>
+      </section>
+
+      <section class="capture-panel" aria-label="Capture controls">
+        <button id="capture" class="primary-button" type="button">Capture Current Page</button>
+        <label class="format-control" for="format-mode">
+          <span>Format</span>
+          <select id="format-mode">
+            <option value="markdown">Markdown</option>
+            <option value="compact">Compact</option>
+            <option value="prompt">Prompt</option>
+          </select>
+        </label>
+      </section>
+
+      <section id="last-result" class="last-result" aria-live="polite">
+        <strong id="result-message">Ready.</strong>
+        <span id="result-meta"></span>
+      </section>
+
+      <section id="latest-source" class="latest-source" hidden>
+        <span>Latest source</span>
+        <button id="open-latest" type="button">Open</button>
+      </section>
+
+      <section class="history-heading" aria-label="History controls">
+        <h2>History</h2>
+        <div class="history-actions">
+          <button id="clear" type="button">Clear</button>
+        </div>
+      </section>
+
+      <section class="history-tools" aria-label="History filters">
+        <input id="search" type="search" placeholder="Search title, URL, or text">
+        <div class="filter-row" role="group" aria-label="History filter">
+          <button class="filter-button active" type="button" data-filter="all">All</button>
+          <button class="filter-button" type="button" data-filter="pinned">Pinned</button>
+          <button class="filter-button" type="button" data-filter="fallback">Fallback</button>
+        </div>
+      </section>
+
+      <ol id="history" aria-label="Recent captures"></ol>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
