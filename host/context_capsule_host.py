@@ -8,7 +8,13 @@ import traceback
 from typing import Any, BinaryIO, Dict, Optional
 
 import clipboard
-from formatter import build_markdown, format_timestamp, normalize_capture_mode, normalize_format_mode
+from formatter import (
+    build_markdown,
+    format_timestamp,
+    normalize_capture_mode,
+    normalize_format_mode,
+    normalize_template_id,
+)
 from storage import (
     CaptureEntry,
     append_entry_to_active_capsule,
@@ -85,12 +91,14 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     content, fallback_used = _content_for_capture_mode(capture_mode, payload, selection)
     captured_at = format_timestamp(_optional_str(payload.get("timestamp")))
     format_mode = normalize_format_mode(str(payload.get("format_mode") or payload.get("format") or "markdown"))
+    template_id = normalize_template_id(str(payload.get("template_id") or "none"))
     markdown = build_markdown(
         url=str(payload.get("url") or ""),
         title=str(payload.get("title") or "Untitled page"),
         body=content,
         captured_at=captured_at,
         format_mode=format_mode,
+        template_id=template_id,
     )
 
     clipboard.write_text(markdown)
@@ -103,6 +111,7 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         fallback_used=fallback_used,
         format_mode=format_mode,
         capture_mode=capture_mode,
+        template_id=template_id,
     )
     entry_id = insert_entry(entry)
     capsule = append_entry_to_active_capsule(entry_id, entry) if bool(payload.get("append_to_capsule")) else None
@@ -113,6 +122,7 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         "captured_at": captured_at,
         "format_mode": format_mode,
         "capture_mode": capture_mode,
+        "template_id": template_id,
         "title": str(payload.get("title") or "Untitled page"),
         "url": str(payload.get("url") or ""),
         "capsule": _capsule_summary(capsule) if capsule else None,

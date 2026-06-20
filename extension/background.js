@@ -2,6 +2,7 @@ const HOST_NAME = "com.context_capsule.host";
 const CAPTURE_MODE_KEY = "captureMode";
 const LAST_STATUS_KEY = "lastCaptureStatus";
 const FORMAT_MODE_KEY = "formatMode";
+const TEMPLATE_ID_KEY = "templateId";
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === "capture-context") {
@@ -38,6 +39,7 @@ async function handlePopupMessage(payload) {
     return captureActiveTab({
       formatMode: payload.format_mode,
       captureMode: payload.capture_mode,
+      templateId: payload.template_id,
       appendToCapsule: Boolean(payload.append_to_capsule)
     });
   }
@@ -47,7 +49,12 @@ async function handlePopupMessage(payload) {
   }
 
   if (payload.action === "get-settings") {
-    return { ok: true, format_mode: await getStoredFormatMode(), capture_mode: await getStoredCaptureMode() };
+    return {
+      ok: true,
+      format_mode: await getStoredFormatMode(),
+      capture_mode: await getStoredCaptureMode(),
+      template_id: await getStoredTemplateId()
+    };
   }
 
   if (payload.action === "set-format-mode") {
@@ -58,6 +65,11 @@ async function handlePopupMessage(payload) {
   if (payload.action === "set-capture-mode") {
     await setStoredCaptureMode(payload.capture_mode);
     return { ok: true, capture_mode: normalizeCaptureMode(payload.capture_mode) };
+  }
+
+  if (payload.action === "set-template-id") {
+    await setStoredTemplateId(payload.template_id);
+    return { ok: true, template_id: normalizeTemplateId(payload.template_id) };
   }
 
   const response = await sendToNative(payload);
@@ -80,8 +92,10 @@ async function captureActiveTab(options = {}) {
 
   const formatMode = normalizeFormatMode(options.formatMode || (await getStoredFormatMode()));
   const captureMode = normalizeCaptureMode(options.captureMode || (await getStoredCaptureMode()));
+  const templateId = normalizeTemplateId(options.templateId || (await getStoredTemplateId()));
   await setStoredFormatMode(formatMode);
   await setStoredCaptureMode(captureMode);
+  await setStoredTemplateId(templateId);
 
   const pageContext = await getPageContext(tab.id);
   const response = await sendToNative({
@@ -95,6 +109,7 @@ async function captureActiveTab(options = {}) {
       timestamp: new Date().toISOString(),
       format_mode: formatMode,
       capture_mode: captureMode,
+      template_id: templateId,
       append_to_capsule: Boolean(options.appendToCapsule)
     }
   });
@@ -113,6 +128,7 @@ async function captureActiveTab(options = {}) {
     captured_at: response.captured_at || "",
     format_mode: response.format_mode || formatMode,
     capture_mode: response.capture_mode || captureMode,
+    template_id: response.template_id || templateId,
     message: captureStatusMessage(response.capture_mode || captureMode, Boolean(response.fallback_used)),
     timestamp: new Date().toISOString()
   };
@@ -236,6 +252,14 @@ function getStoredCaptureMode() {
   });
 }
 
+function getStoredTemplateId() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([TEMPLATE_ID_KEY], (items) => {
+      resolve(normalizeTemplateId(items[TEMPLATE_ID_KEY]));
+    });
+  });
+}
+
 function setStoredFormatMode(formatMode) {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [FORMAT_MODE_KEY]: normalizeFormatMode(formatMode) }, () => resolve());
@@ -248,6 +272,12 @@ function setStoredCaptureMode(captureMode) {
   });
 }
 
+function setStoredTemplateId(templateId) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [TEMPLATE_ID_KEY]: normalizeTemplateId(templateId) }, () => resolve());
+  });
+}
+
 function normalizeFormatMode(formatMode) {
   const mode = String(formatMode || "markdown").toLowerCase();
   return ["markdown", "compact", "prompt"].includes(mode) ? mode : "markdown";
@@ -256,6 +286,11 @@ function normalizeFormatMode(formatMode) {
 function normalizeCaptureMode(captureMode) {
   const mode = String(captureMode || "smart").toLowerCase();
   return ["smart", "selection", "clipboard", "metadata", "visible", "readable"].includes(mode) ? mode : "smart";
+}
+
+function normalizeTemplateId(templateId) {
+  const candidate = String(templateId || "none").toLowerCase();
+  return ["none", "summarize", "debug", "explain", "notes"].includes(candidate) ? candidate : "none";
 }
 
 function normalizePageContext(response) {

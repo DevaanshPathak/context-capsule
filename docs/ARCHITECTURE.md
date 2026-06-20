@@ -9,7 +9,7 @@ Context Capsule is intentionally split so the browser extension stays thin and t
 3. The background service worker opens the Python host with `chrome.runtime.connectNative`.
 4. `host/context_capsule_host.py` receives a length-prefixed JSON message.
 5. The host falls back to the current clipboard if the page selection is empty.
-6. `host/formatter.py` builds the requested output preset.
+6. `host/formatter.py` builds the requested output preset and optional prompt template.
 7. `host/clipboard.py` copies the final text to the system clipboard.
 8. `host/storage.py` saves the capture in SQLite history.
 9. The popup reads history and active capsule state through the same native host and can re-copy, pin, delete, clear, or combine captures.
@@ -52,6 +52,7 @@ Important fields:
 - `fallback_used`
 - `format_mode`
 - `capture_mode`
+- `template_id`
 - `pinned`
 
 Pinned entries float to the top and are protected from automatic pruning. The popup's explicit Clear action removes all entries.

@@ -77,7 +77,7 @@ Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and 
    - `Ctrl+Shift+C` captures the active page context.
    - `Ctrl+Shift+H` opens history.
    - Clicking the toolbar icon opens the popup dashboard.
-   - The popup can capture the current page, switch capture modes, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
+   - The popup can capture the current page, switch capture modes, apply prompt templates, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
    - The popup can also collect multiple captures into an active capsule and copy them as one combined markdown prompt.
 
 On macOS, use `Command+Shift+C` and `Command+Shift+H`.
@@ -126,6 +126,14 @@ Pinned entries float to the top and are protected from automatic pruning. The ex
 
 The popup remembers the most recent preset and stores the preset name with each history entry.
 
+## Prompt Templates
+
+- `None`: copies only the formatted context.
+- `Summarize`: asks an AI assistant to summarize key points.
+- `Debug`: asks for likely causes and next steps.
+- `Explain docs`: asks for a clear explanation and practical implications.
+- `Notes`: asks for concise structured notes.
+
 ## Capture Modes
 
 - `Smart`: selected text with clipboard fallback.
@@ -166,5 +174,6 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Pin, unpin, delete, and clear entries from the popup. The list should refresh after each action.
 - Start a capsule, append two pages, copy it, and paste. The output should contain both captures.
 - Switch each format preset and capture once. The pasted output should match the selected preset.
+- Switch each prompt template and capture once. The pasted output should include the selected instruction text.
 - Run `python install.py --doctor`. It should show PASS/FAIL rows for dependency, clipboard, host launch, manifest, and browser registration checks.
 - Re-run `python install.py`. It should complete cleanly without manual JSON or registry edits.

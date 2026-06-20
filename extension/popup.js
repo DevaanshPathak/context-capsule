@@ -22,6 +22,7 @@ const statFallback = document.querySelector("#stat-fallback");
 const statPinned = document.querySelector("#stat-pinned");
 const statTotal = document.querySelector("#stat-total");
 const statusText = document.querySelector("#status");
+const templateSelect = document.querySelector("#template-id");
 
 let currentEntries = [];
 let currentFilter = "all";
@@ -55,6 +56,9 @@ document.addEventListener("DOMContentLoaded", () => {
   captureModeSelect.addEventListener("change", () => {
     setCaptureMode(captureModeSelect.value).catch(showError);
   });
+  templateSelect.addEventListener("change", () => {
+    setTemplateId(templateSelect.value).catch(showError);
+  });
   searchInput.addEventListener("input", () => {
     renderHistory(currentEntries);
   });
@@ -80,6 +84,9 @@ async function initializePopup() {
   if (settings && settings.ok === true && settings.capture_mode) {
     captureModeSelect.value = settings.capture_mode;
   }
+  if (settings && settings.ok === true && settings.template_id) {
+    templateSelect.value = settings.template_id;
+  }
   await refreshPopup();
 }
 
@@ -94,7 +101,8 @@ async function captureCurrentPage() {
     const response = await sendToBackground({
       action: "capture-active-tab",
       format_mode: formatSelect.value,
-      capture_mode: captureModeSelect.value
+      capture_mode: captureModeSelect.value,
+      template_id: templateSelect.value
     });
     if (!response || response.ok !== true) {
       throw new Error(response && response.error ? response.error : "Capture failed.");
@@ -113,6 +121,7 @@ async function appendCurrentPageToCapsule() {
       action: "capture-active-tab",
       format_mode: formatSelect.value,
       capture_mode: captureModeSelect.value,
+      template_id: templateSelect.value,
       append_to_capsule: true
     });
     if (!response || response.ok !== true) {
@@ -373,6 +382,16 @@ async function setCaptureMode(captureMode) {
   }
 }
 
+async function setTemplateId(templateId) {
+  const response = await sendToBackground({
+    action: "set-template-id",
+    template_id: templateId
+  });
+  if (!response || response.ok !== true) {
+    throw new Error(response && response.error ? response.error : "Could not save template.");
+  }
+}
+
 function sendToBackground(payload) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ source: "context-capsule-popup", payload }, (response) => {
@@ -420,6 +439,9 @@ function textNode(tagName, className, value) {
 
 function entryMeta(entry) {
   const parts = [entry.captured_at || "Unknown time", entry.capture_mode || "smart", entry.format_mode || "markdown"];
+  if (entry.template_id && entry.template_id !== "none") {
+    parts.push(entry.template_id);
+  }
   if (entry.fallback_used) {
     parts.push("clipboard fallback");
   }
@@ -436,6 +458,9 @@ function statusMeta(status) {
   }
   if (status.capture_mode) {
     parts.push(status.capture_mode);
+  }
+  if (status.template_id && status.template_id !== "none") {
+    parts.push(status.template_id);
   }
   if (status.fallback_used) {
     parts.push("clipboard fallback");
