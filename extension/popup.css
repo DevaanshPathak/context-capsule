@@ -21,7 +21,8 @@ body {
 header,
 .history-heading,
 .capture-panel,
-.latest-source {
+.latest-source,
+.capsule-panel {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -191,6 +192,34 @@ input {
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.capsule-panel {
+  align-items: flex-start;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, CanvasText 13%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, Canvas 95%, CanvasText 5%);
+}
+
+#capsule-status {
+  margin-top: 4px;
+  color: color-mix(in srgb, CanvasText 62%, transparent);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.capsule-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(72px, 1fr));
+  gap: 6px;
+}
+
+.capsule-actions button {
+  min-height: 28px;
+  padding: 4px 7px;
+  font-size: 12px;
 }
 
 .history-heading {

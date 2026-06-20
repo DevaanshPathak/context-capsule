@@ -11,14 +11,20 @@ import clipboard
 from formatter import build_markdown, format_timestamp, normalize_capture_mode, normalize_format_mode
 from storage import (
     CaptureEntry,
+    append_entry_to_active_capsule,
+    append_existing_capture_to_active_capsule,
+    capsule_markdown,
+    clear_active_capsule,
     clear_entries,
     delete_entry,
+    get_active_capsule,
     get_entry,
     history_summary,
     init_db,
     insert_entry,
     list_entries,
     set_pinned,
+    start_capsule,
 )
 
 
@@ -60,6 +66,16 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
         return clear_history()
     if action == "pin":
         return pin_capture(message)
+    if action == "capsule_start":
+        return capsule_start(message)
+    if action == "capsule_append":
+        return capsule_append(message)
+    if action == "capsule_copy":
+        return capsule_copy()
+    if action == "capsule_clear":
+        return capsule_clear()
+    if action == "capsule_status":
+        return capsule_status()
     return {"ok": False, "error": f"Unknown action: {action}"}
 
 
@@ -78,18 +94,18 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     )
 
     clipboard.write_text(markdown)
-    entry_id = insert_entry(
-        CaptureEntry(
-            url=str(payload.get("url") or ""),
-            title=str(payload.get("title") or "Untitled page"),
-            content=content,
-            markdown=markdown,
-            captured_at=captured_at,
-            fallback_used=fallback_used,
-            format_mode=format_mode,
-            capture_mode=capture_mode,
-        )
+    entry = CaptureEntry(
+        url=str(payload.get("url") or ""),
+        title=str(payload.get("title") or "Untitled page"),
+        content=content,
+        markdown=markdown,
+        captured_at=captured_at,
+        fallback_used=fallback_used,
+        format_mode=format_mode,
+        capture_mode=capture_mode,
     )
+    entry_id = insert_entry(entry)
+    capsule = append_entry_to_active_capsule(entry_id, entry) if bool(payload.get("append_to_capsule")) else None
     return {
         "ok": True,
         "id": entry_id,
@@ -99,6 +115,7 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         "capture_mode": capture_mode,
         "title": str(payload.get("title") or "Untitled page"),
         "url": str(payload.get("url") or ""),
+        "capsule": _capsule_summary(capsule) if capsule else None,
     }
 
 
@@ -166,6 +183,39 @@ def pin_capture(message: Dict[str, Any]) -> Dict[str, Any]:
     return {"ok": True, "id": entry_id, "pinned": pinned}
 
 
+def capsule_start(message: Dict[str, Any]) -> Dict[str, Any]:
+    title = str(message.get("title") or "").strip() or None
+    return {"ok": True, "capsule": _capsule_summary(start_capsule(title))}
+
+
+def capsule_append(message: Dict[str, Any]) -> Dict[str, Any]:
+    entry_id = _int_value(message.get("id"), 0)
+    if entry_id <= 0:
+        return {"ok": False, "error": "Missing capture id."}
+    capsule = append_existing_capture_to_active_capsule(entry_id)
+    if not capsule:
+        return {"ok": False, "error": f"Capture {entry_id} was not found."}
+    return {"ok": True, "capsule": _capsule_summary(capsule)}
+
+
+def capsule_copy() -> Dict[str, Any]:
+    capsule = get_active_capsule()
+    if not capsule or not capsule.get("item_count"):
+        return {"ok": False, "error": "No active capsule with captures."}
+    markdown = capsule_markdown(capsule)
+    clipboard.write_text(markdown)
+    return {"ok": True, "capsule": _capsule_summary(capsule)}
+
+
+def capsule_clear() -> Dict[str, Any]:
+    return {"ok": True, "deleted": clear_active_capsule()}
+
+
+def capsule_status() -> Dict[str, Any]:
+    capsule = get_active_capsule()
+    return {"ok": True, "capsule": _capsule_summary(capsule) if capsule else None}
+
+
 def read_message(stream: BinaryIO) -> Optional[Dict[str, Any]]:
     raw_length = stream.read(4)
     if not raw_length:
@@ -217,6 +267,19 @@ def _int_value(value: Any, fallback: int) -> int:
 
 def _optional_str(value: Any) -> Optional[str]:
     return str(value) if value is not None else None
+
+
+def _capsule_summary(capsule: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not capsule:
+        return None
+    return {
+        "id": capsule["id"],
+        "title": capsule["title"],
+        "active": capsule["active"],
+        "item_count": capsule["item_count"],
+        "preview": capsule.get("preview", ""),
+        "updated_at": capsule.get("updated_at", ""),
+    }
 
 
 if __name__ == "__main__":

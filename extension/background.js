@@ -35,7 +35,11 @@ async function handlePopupMessage(payload) {
   }
 
   if (payload.action === "capture-active-tab") {
-    return captureActiveTab({ formatMode: payload.format_mode, captureMode: payload.capture_mode });
+    return captureActiveTab({
+      formatMode: payload.format_mode,
+      captureMode: payload.capture_mode,
+      appendToCapsule: Boolean(payload.append_to_capsule)
+    });
   }
 
   if (payload.action === "last-status") {
@@ -90,7 +94,8 @@ async function captureActiveTab(options = {}) {
       readable_text: pageContext.readableText,
       timestamp: new Date().toISOString(),
       format_mode: formatMode,
-      capture_mode: captureMode
+      capture_mode: captureMode,
+      append_to_capsule: Boolean(options.appendToCapsule)
     }
   });
 
@@ -111,6 +116,9 @@ async function captureActiveTab(options = {}) {
     message: captureStatusMessage(response.capture_mode || captureMode, Boolean(response.fallback_used)),
     timestamp: new Date().toISOString()
   };
+  if (response.capsule) {
+    status.message = `Appended to ${response.capsule.title}.`;
+  }
   await saveLastStatus(status);
   await flashBadge(response.fallback_used ? "CB" : "OK", "#146c2e");
   return response;

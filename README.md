@@ -78,6 +78,7 @@ Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and 
    - `Ctrl+Shift+H` opens history.
    - Clicking the toolbar icon opens the popup dashboard.
    - The popup can capture the current page, switch capture modes, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
+   - The popup can also collect multiple captures into an active capsule and copy them as one combined markdown prompt.
 
 On macOS, use `Command+Shift+C` and `Command+Shift+H`.
 
@@ -134,6 +135,15 @@ The popup remembers the most recent preset and stores the preset name with each 
 - `Visible text`: readable text currently visible in the viewport.
 - `Readable text`: cleaned text from the page's main/article/body content.
 
+## Multi-Source Capsules
+
+Use the popup's Capsule section to collect multiple captures before pasting into an AI chat:
+
+- `Start`: creates a new active capsule.
+- `Append Page`: captures the current page and adds it to the active capsule.
+- `Copy`: copies all capsule items as one combined markdown prompt.
+- `Clear`: removes the active capsule.
+
 ## Demo Page
 
 Serve `demo.html` through Python's built-in local server for a controlled manual test page with selectable sample text and checklist prompts:
@@ -154,6 +164,7 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Click an older popup entry, then paste. That older markdown block should be copied back to the clipboard.
 - Search history, filter pinned/fallback captures, and open a saved source URL from the popup.
 - Pin, unpin, delete, and clear entries from the popup. The list should refresh after each action.
+- Start a capsule, append two pages, copy it, and paste. The output should contain both captures.
 - Switch each format preset and capture once. The pasted output should match the selected preset.
 - Run `python install.py --doctor`. It should show PASS/FAIL rows for dependency, clipboard, host launch, manifest, and browser registration checks.
 - Re-run `python install.py`. It should complete cleanly without manual JSON or registry edits.

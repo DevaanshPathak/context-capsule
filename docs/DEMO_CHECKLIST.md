@@ -54,9 +54,10 @@ Using localhost avoids Chrome's file URL extension restrictions.
 10. Confirm the popup shows total, pinned, fallback counts, last status, search, filters, and recent captures.
 11. Re-copy an older entry and paste it.
 12. Search history, filter pinned/fallback captures, and open a saved source URL.
-13. Pin, unpin, delete, and clear history entries.
-14. Switch between Markdown, Compact, and Prompt formats and capture once per preset.
-15. Switch between Smart, Selection, Clipboard, Page only, Visible text, and Readable text capture modes.
+13. Start a capsule, append two pages, copy the capsule, and paste it into an editor.
+14. Pin, unpin, delete, and clear history entries.
+15. Switch between Markdown, Compact, and Prompt formats and capture once per preset.
+16. Switch between Smart, Selection, Clipboard, Page only, Visible text, and Readable text capture modes.
 
 ## Expected Output
 
@@ -74,4 +75,5 @@ Selected text from the page.
 - One hotkey replaces selecting, copying, switching apps, pasting, grabbing the URL, and cleanup.
 - Clipboard fallback means a capture still works when nothing is selected.
 - Local history means a capture is not lost if the clipboard changes before paste.
+- Capsules collect multiple sources into one AI-ready prompt.
 - The browser extension is only a shim; Python owns formatting, clipboard, and storage.

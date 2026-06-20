@@ -12,7 +12,7 @@ Context Capsule is intentionally split so the browser extension stays thin and t
 6. `host/formatter.py` builds the requested output preset.
 7. `host/clipboard.py` copies the final text to the system clipboard.
 8. `host/storage.py` saves the capture in SQLite history.
-9. The popup reads history through the same native host and can re-copy, pin, delete, or clear entries.
+9. The popup reads history and active capsule state through the same native host and can re-copy, pin, delete, clear, or combine captures.
 
 ## Boundaries
 
@@ -39,6 +39,7 @@ Main actions:
 - `pin`: pin or unpin a history entry.
 - `delete`: remove one history entry.
 - `clear`: remove all history entries.
+- `capsule_start`, `capsule_append`, `capsule_copy`, `capsule_clear`, `capsule_status`: manage the active multi-source capsule.
 
 ## Data Model
 
@@ -54,3 +55,5 @@ Important fields:
 - `pinned`
 
 Pinned entries float to the top and are protected from automatic pruning. The popup's explicit Clear action removes all entries.
+
+Capsules use `capsules` and `capsule_items` tables. Only one capsule is active at a time; copying a capsule joins each saved markdown block into one larger prompt.
