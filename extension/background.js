@@ -43,6 +43,8 @@ async function handlePopupMessage(payload) {
       formatMode: payload.format_mode,
       captureMode: payload.capture_mode,
       templateId: payload.template_id,
+      project: payload.project,
+      tag: payload.tag,
       appendToCapsule: Boolean(payload.append_to_capsule)
     });
   }
@@ -120,6 +122,8 @@ async function captureActiveTab(options = {}) {
       template_id: templateId,
       timestamp_style: timestampStyle,
       auto_pin_fallback: autoPinFallback,
+      project: String(options.project || "").trim(),
+      tag: String(options.tag || "").trim(),
       append_to_capsule: Boolean(options.appendToCapsule)
     }
   });
@@ -140,6 +144,8 @@ async function captureActiveTab(options = {}) {
     capture_mode: response.capture_mode || captureMode,
     template_id: response.template_id || templateId,
     timestamp_style: response.timestamp_style || timestampStyle,
+    project: response.project || "",
+    tag: response.tag || "",
     message: captureStatusMessage(response.capture_mode || captureMode, Boolean(response.fallback_used)),
     timestamp: new Date().toISOString()
   };

@@ -67,6 +67,17 @@
         </label>
       </section>
 
+      <section class="label-panel" aria-label="Capture labels">
+        <label>
+          <span>Project</span>
+          <input id="project" type="text" maxlength="80" placeholder="research">
+        </label>
+        <label>
+          <span>Tag</span>
+          <input id="tag" type="text" maxlength="80" placeholder="debugging">
+        </label>
+      </section>
+
       <section id="last-result" class="last-result" aria-live="polite">
         <strong id="result-message">Ready.</strong>
         <span id="result-meta"></span>
@@ -99,6 +110,7 @@
 
       <section class="history-tools" aria-label="History filters">
         <input id="search" type="search" placeholder="Search title, URL, or text">
+        <input id="label-filter" type="search" placeholder="Filter project or tag">
         <div class="filter-row" role="group" aria-label="History filter">
           <button class="filter-button active" type="button" data-filter="all">All</button>
           <button class="filter-button" type="button" data-filter="pinned">Pinned</button>

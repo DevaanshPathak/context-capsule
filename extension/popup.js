@@ -12,7 +12,9 @@ const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
 const formatSelect = document.querySelector("#format-mode");
 const historyList = document.querySelector("#history");
 const latestSource = document.querySelector("#latest-source");
+const labelFilterInput = document.querySelector("#label-filter");
 const openLatestButton = document.querySelector("#open-latest");
+const projectInput = document.querySelector("#project");
 const refreshButton = document.querySelector("#refresh");
 const resultMeta = document.querySelector("#result-meta");
 const resultMessage = document.querySelector("#result-message");
@@ -23,6 +25,7 @@ const statFallback = document.querySelector("#stat-fallback");
 const statPinned = document.querySelector("#stat-pinned");
 const statTotal = document.querySelector("#stat-total");
 const statusText = document.querySelector("#status");
+const tagInput = document.querySelector("#tag");
 const templateSelect = document.querySelector("#template-id");
 
 let currentEntries = [];
@@ -65,6 +68,9 @@ document.addEventListener("DOMContentLoaded", () => {
     setTemplateId(templateSelect.value).catch(showError);
   });
   searchInput.addEventListener("input", () => {
+    renderHistory(currentEntries);
+  });
+  labelFilterInput.addEventListener("input", () => {
     renderHistory(currentEntries);
   });
   openLatestButton.addEventListener("click", () => {
@@ -110,7 +116,9 @@ async function captureCurrentPage() {
       action: "capture-active-tab",
       format_mode: formatSelect.value,
       capture_mode: captureModeSelect.value,
-      template_id: templateSelect.value
+      template_id: templateSelect.value,
+      project: projectInput.value,
+      tag: tagInput.value
     });
     if (!response || response.ok !== true) {
       throw new Error(response && response.error ? response.error : "Capture failed.");
@@ -130,6 +138,8 @@ async function appendCurrentPageToCapsule() {
       format_mode: formatSelect.value,
       capture_mode: captureModeSelect.value,
       template_id: templateSelect.value,
+      project: projectInput.value,
+      tag: tagInput.value,
       append_to_capsule: true
     });
     if (!response || response.ok !== true) {
@@ -216,7 +226,10 @@ function renderCapsule(capsule) {
     return;
   }
 
-  capsuleStatus.textContent = `${capsule.title} - ${capsule.item_count || 0} captures`;
+  const labels = [capsule.project ? `project: ${capsule.project}` : "", capsule.tag ? `tag: ${capsule.tag}` : ""]
+    .filter(Boolean)
+    .join(" - ");
+  capsuleStatus.textContent = `${capsule.title} - ${capsule.item_count || 0} captures${labels ? ` - ${labels}` : ""}`;
   capsuleCopyButton.disabled = !capsule.item_count;
   capsuleClearButton.disabled = false;
 }
@@ -269,6 +282,7 @@ function renderHistory(entries) {
 
 function filterEntries(entries) {
   const query = searchInput.value.trim().toLowerCase();
+  const labelQuery = labelFilterInput.value.trim().toLowerCase();
   return entries.filter((entry) => {
     if (currentFilter === "pinned" && !entry.pinned) {
       return false;
@@ -277,13 +291,21 @@ function filterEntries(entries) {
       return false;
     }
     if (!query) {
-      return true;
+      return matchesLabelFilter(entry, labelQuery);
     }
-    return [entry.title, entry.url, entry.preview, entry.format_mode]
+    const matchesQuery = [entry.title, entry.url, entry.preview, entry.format_mode, entry.capture_mode, entry.template_id]
       .join(" ")
       .toLowerCase()
       .includes(query);
+    return matchesQuery && matchesLabelFilter(entry, labelQuery);
   });
+}
+
+function matchesLabelFilter(entry, labelQuery) {
+  if (!labelQuery) {
+    return true;
+  }
+  return [entry.project, entry.tag].join(" ").toLowerCase().includes(labelQuery);
 }
 
 async function recopyEntry(entryId) {
@@ -301,7 +323,11 @@ async function recopyEntry(entryId) {
 }
 
 async function startCapsule() {
-  const response = await sendToBackground({ action: "capsule_start" });
+  const response = await sendToBackground({
+    action: "capsule_start",
+    project: projectInput.value,
+    tag: tagInput.value
+  });
   if (!response || response.ok !== true) {
     throw new Error(response && response.error ? response.error : "Could not start capsule.");
   }
@@ -450,6 +476,12 @@ function entryMeta(entry) {
   if (entry.template_id && entry.template_id !== "none") {
     parts.push(entry.template_id);
   }
+  if (entry.project) {
+    parts.push(`project: ${entry.project}`);
+  }
+  if (entry.tag) {
+    parts.push(`tag: ${entry.tag}`);
+  }
   if (entry.fallback_used) {
     parts.push("clipboard fallback");
   }
@@ -469,6 +501,12 @@ function statusMeta(status) {
   }
   if (status.template_id && status.template_id !== "none") {
     parts.push(status.template_id);
+  }
+  if (status.project) {
+    parts.push(`project: ${status.project}`);
+  }
+  if (status.tag) {
+    parts.push(`tag: ${status.tag}`);
   }
   if (status.fallback_used) {
     parts.push("clipboard fallback");

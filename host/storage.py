@@ -24,6 +24,8 @@ class CaptureEntry:
     capture_mode: str = "smart"
     template_id: str = "none"
     timestamp_style: str = "local"
+    project: str = ""
+    tag: str = ""
 
 
 def default_db_path() -> Path:
@@ -51,6 +53,8 @@ def init_db(db_path: Optional[Path] = None) -> None:
                 capture_mode TEXT NOT NULL DEFAULT 'smart',
                 template_id TEXT NOT NULL DEFAULT 'none',
                 timestamp_style TEXT NOT NULL DEFAULT 'local',
+                project TEXT NOT NULL DEFAULT '',
+                tag TEXT NOT NULL DEFAULT '',
                 pinned INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
@@ -60,18 +64,24 @@ def init_db(db_path: Optional[Path] = None) -> None:
         _ensure_column(connection, "captures", "capture_mode", "TEXT NOT NULL DEFAULT 'smart'")
         _ensure_column(connection, "captures", "template_id", "TEXT NOT NULL DEFAULT 'none'")
         _ensure_column(connection, "captures", "timestamp_style", "TEXT NOT NULL DEFAULT 'local'")
+        _ensure_column(connection, "captures", "project", "TEXT NOT NULL DEFAULT ''")
+        _ensure_column(connection, "captures", "tag", "TEXT NOT NULL DEFAULT ''")
         _ensure_column(connection, "captures", "pinned", "INTEGER NOT NULL DEFAULT 0")
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS capsules (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
+                project TEXT NOT NULL DEFAULT '',
+                tag TEXT NOT NULL DEFAULT '',
                 active INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
+        _ensure_column(connection, "capsules", "project", "TEXT NOT NULL DEFAULT ''")
+        _ensure_column(connection, "capsules", "tag", "TEXT NOT NULL DEFAULT ''")
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS capsule_items (
@@ -88,12 +98,16 @@ def init_db(db_path: Optional[Path] = None) -> None:
                 capture_mode TEXT NOT NULL DEFAULT 'smart',
                 template_id TEXT NOT NULL DEFAULT 'none',
                 timestamp_style TEXT NOT NULL DEFAULT 'local',
+                project TEXT NOT NULL DEFAULT '',
+                tag TEXT NOT NULL DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
         _ensure_column(connection, "capsule_items", "template_id", "TEXT NOT NULL DEFAULT 'none'")
         _ensure_column(connection, "capsule_items", "timestamp_style", "TEXT NOT NULL DEFAULT 'local'")
+        _ensure_column(connection, "capsule_items", "project", "TEXT NOT NULL DEFAULT ''")
+        _ensure_column(connection, "capsule_items", "tag", "TEXT NOT NULL DEFAULT ''")
 
 
 def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
@@ -102,8 +116,8 @@ def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
     with _connect(path) as connection:
         cursor = connection.execute(
             """
-            INSERT INTO captures (url, title, content, markdown, captured_at, fallback_used, format_mode, capture_mode, template_id, timestamp_style)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO captures (url, title, content, markdown, captured_at, fallback_used, format_mode, capture_mode, template_id, timestamp_style, project, tag)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 entry.url,
@@ -116,6 +130,8 @@ def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
                 entry.capture_mode,
                 entry.template_id,
                 entry.timestamp_style,
+                entry.project,
+                entry.tag,
             ),
         )
         _prune_history(connection, MAX_HISTORY_ENTRIES)
@@ -129,7 +145,7 @@ def list_entries(limit: int = DEFAULT_HISTORY_LIMIT, db_path: Optional[Path] = N
     with _connect(path) as connection:
         rows = connection.execute(
             """
-            SELECT id, url, title, content, captured_at, fallback_used, pinned, format_mode, capture_mode, template_id, timestamp_style
+            SELECT id, url, title, content, captured_at, fallback_used, pinned, format_mode, capture_mode, template_id, timestamp_style, project, tag
             FROM captures
             ORDER BY pinned DESC, id DESC
             LIMIT ?
@@ -183,7 +199,7 @@ def get_entry(entry_id: int, db_path: Optional[Path] = None) -> Optional[Dict[st
     with _connect(path) as connection:
         row = connection.execute(
             """
-            SELECT id, url, title, content, markdown, captured_at, fallback_used, pinned, format_mode, capture_mode, template_id, timestamp_style
+            SELECT id, url, title, content, markdown, captured_at, fallback_used, pinned, format_mode, capture_mode, template_id, timestamp_style, project, tag
             FROM captures
             WHERE id = ?
             """,
@@ -219,15 +235,20 @@ def set_pinned(entry_id: int, pinned: bool, db_path: Optional[Path] = None) -> b
         return cursor.rowcount > 0
 
 
-def start_capsule(title: Optional[str] = None, db_path: Optional[Path] = None) -> Dict[str, Any]:
+def start_capsule(
+    title: Optional[str] = None,
+    project: str = "",
+    tag: str = "",
+    db_path: Optional[Path] = None,
+) -> Dict[str, Any]:
     path = db_path or default_db_path()
     init_db(path)
     capsule_title = title or f"Capsule {datetime.now().strftime('%Y-%m-%d %H:%M')}"
     with _connect(path) as connection:
         connection.execute("UPDATE capsules SET active = 0 WHERE active = 1")
         cursor = connection.execute(
-            "INSERT INTO capsules (title, active) VALUES (?, 1)",
-            (capsule_title,),
+            "INSERT INTO capsules (title, project, tag, active) VALUES (?, ?, ?, 1)",
+            (capsule_title, project, tag),
         )
         capsule_id = int(cursor.lastrowid)
     capsule = get_capsule(capsule_id, path)
@@ -265,9 +286,9 @@ def append_entry_to_active_capsule(
             """
             INSERT INTO capsule_items (
                 capsule_id, capture_id, position, url, title, content, markdown,
-                captured_at, format_mode, capture_mode, template_id, timestamp_style
+                captured_at, format_mode, capture_mode, template_id, timestamp_style, project, tag
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 capsule_id,
@@ -282,6 +303,8 @@ def append_entry_to_active_capsule(
                 entry.capture_mode,
                 entry.template_id,
                 entry.timestamp_style,
+                entry.project,
+                entry.tag,
             ),
         )
         connection.execute(
@@ -306,6 +329,8 @@ def append_existing_capture_to_active_capsule(entry_id: int, db_path: Optional[P
         capture_mode=str(entry["capture_mode"]),
         template_id=str(entry.get("template_id") or "none"),
         timestamp_style=str(entry.get("timestamp_style") or "local"),
+        project=str(entry.get("project") or ""),
+        tag=str(entry.get("tag") or ""),
     )
     return append_entry_to_active_capsule(entry_id, capture_entry, db_path)
 
@@ -316,7 +341,7 @@ def get_capsule(capsule_id: int, db_path: Optional[Path] = None) -> Optional[Dic
     with _connect(path) as connection:
         capsule = connection.execute(
             """
-            SELECT id, title, active, created_at, updated_at
+            SELECT id, title, project, tag, active, created_at, updated_at
             FROM capsules
             WHERE id = ?
             """,
@@ -327,7 +352,7 @@ def get_capsule(capsule_id: int, db_path: Optional[Path] = None) -> Optional[Dic
         items = connection.execute(
             """
             SELECT id, capture_id, position, url, title, content, markdown,
-                   captured_at, format_mode, capture_mode, template_id, timestamp_style
+                   captured_at, format_mode, capture_mode, template_id, timestamp_style, project, tag
             FROM capsule_items
             WHERE capsule_id = ?
             ORDER BY position ASC, id ASC
@@ -415,6 +440,8 @@ def _history_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         "capture_mode": _row_text(row, "capture_mode", "smart"),
         "template_id": _row_text(row, "template_id", "none"),
         "timestamp_style": _row_text(row, "timestamp_style", "local"),
+        "project": _row_text(row, "project", ""),
+        "tag": _row_text(row, "tag", ""),
         "preview": _preview(content),
     }
 
@@ -431,6 +458,8 @@ def _capsule_to_dict(capsule: sqlite3.Row, items: List[sqlite3.Row]) -> Dict[str
     return {
         "id": int(capsule["id"]),
         "title": str(capsule["title"] or ""),
+        "project": str(capsule["project"] or ""),
+        "tag": str(capsule["tag"] or ""),
         "active": bool(capsule["active"]),
         "created_at": str(capsule["created_at"] or ""),
         "updated_at": str(capsule["updated_at"] or ""),
@@ -454,6 +483,8 @@ def _capsule_item_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         "capture_mode": str(row["capture_mode"] or "smart"),
         "template_id": str(row["template_id"] or "none"),
         "timestamp_style": str(row["timestamp_style"] or "local"),
+        "project": str(row["project"] or ""),
+        "tag": str(row["tag"] or ""),
     }
 
 

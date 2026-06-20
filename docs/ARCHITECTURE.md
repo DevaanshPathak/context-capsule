@@ -54,6 +54,7 @@ Important fields:
 - `format_mode`
 - `capture_mode`
 - `template_id`
+- `project`, `tag`
 - `pinned`
 
 Pinned entries float to the top and are protected from automatic pruning. The popup's explicit Clear action removes all entries.

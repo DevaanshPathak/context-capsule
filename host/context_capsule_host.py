@@ -95,6 +95,8 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     captured_at = format_timestamp(raw_timestamp, timestamp_style)
     format_mode = normalize_format_mode(str(payload.get("format_mode") or payload.get("format") or "markdown"))
     template_id = normalize_template_id(str(payload.get("template_id") or "none"))
+    project = _clean_label(payload.get("project"))
+    tag = _clean_label(payload.get("tag"))
     markdown = build_markdown(
         url=str(payload.get("url") or ""),
         title=str(payload.get("title") or "Untitled page"),
@@ -117,6 +119,8 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         capture_mode=capture_mode,
         template_id=template_id,
         timestamp_style=timestamp_style,
+        project=project,
+        tag=tag,
     )
     entry_id = insert_entry(entry)
     auto_pinned = bool(payload.get("auto_pin_fallback")) and fallback_used
@@ -133,6 +137,8 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         "template_id": template_id,
         "timestamp_style": timestamp_style,
         "pinned": auto_pinned,
+        "project": project,
+        "tag": tag,
         "title": str(payload.get("title") or "Untitled page"),
         "url": str(payload.get("url") or ""),
         "capsule": _capsule_summary(capsule) if capsule else None,
@@ -205,7 +211,9 @@ def pin_capture(message: Dict[str, Any]) -> Dict[str, Any]:
 
 def capsule_start(message: Dict[str, Any]) -> Dict[str, Any]:
     title = str(message.get("title") or "").strip() or None
-    return {"ok": True, "capsule": _capsule_summary(start_capsule(title))}
+    project = _clean_label(message.get("project"))
+    tag = _clean_label(message.get("tag"))
+    return {"ok": True, "capsule": _capsule_summary(start_capsule(title, project=project, tag=tag))}
 
 
 def capsule_append(message: Dict[str, Any]) -> Dict[str, Any]:
@@ -289,6 +297,10 @@ def _optional_str(value: Any) -> Optional[str]:
     return str(value) if value is not None else None
 
 
+def _clean_label(value: Any) -> str:
+    return " ".join(str(value or "").strip().split())[:80]
+
+
 def _capsule_summary(capsule: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     if not capsule:
         return None
@@ -298,6 +310,8 @@ def _capsule_summary(capsule: Optional[Dict[str, Any]]) -> Optional[Dict[str, An
         "active": capsule["active"],
         "item_count": capsule["item_count"],
         "preview": capsule.get("preview", ""),
+        "project": capsule.get("project", ""),
+        "tag": capsule.get("tag", ""),
         "updated_at": capsule.get("updated_at", ""),
     }
 
