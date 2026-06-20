@@ -376,3 +376,53 @@ input {
   padding: 4px 7px;
   font-size: 12px;
 }
+
+.diagnostics-panel {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, CanvasText 14%, transparent);
+}
+
+.diagnostics-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.diagnostics-heading button {
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+#diagnostics {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diagnostic-entry {
+  padding: 8px;
+  border-left: 3px solid #315b96;
+  border-radius: 6px;
+  background: color-mix(in srgb, Canvas 95%, CanvasText 5%);
+  font-size: 12px;
+}
+
+.diagnostic-entry.error {
+  border-left-color: #b3261e;
+}
+
+.diagnostic-entry strong,
+.diagnostic-entry span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-entry span {
+  margin-top: 3px;
+  color: color-mix(in srgb, CanvasText 62%, transparent);
+}

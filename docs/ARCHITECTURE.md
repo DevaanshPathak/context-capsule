@@ -42,6 +42,7 @@ Main actions:
 - `clear`: remove all history entries.
 - `capsule_start`, `capsule_append`, `capsule_copy`, `capsule_clear`, `capsule_status`: manage the active multi-source capsule.
 - `export`: copies visible history, all history, or active capsule as Markdown or JSON.
+- `diagnostics`: returns recent host events and errors from the local diagnostics log.
 
 ## Data Model
 
@@ -61,3 +62,5 @@ Important fields:
 Pinned entries float to the top and are protected from automatic pruning. The popup's explicit Clear action removes all entries.
 
 Capsules use `capsules` and `capsule_items` tables. Only one capsule is active at a time; copying a capsule joins each saved markdown block into one larger prompt.
+
+Diagnostics use a capped `diagnostics` table for recent host events and errors.

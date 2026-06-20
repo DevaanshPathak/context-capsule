@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 DEFAULT_HISTORY_LIMIT = 20
 MAX_HISTORY_ENTRIES = 200
+MAX_DIAGNOSTICS = 50
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,17 @@ def init_db(db_path: Optional[Path] = None) -> None:
         _ensure_column(connection, "capsule_items", "timestamp_style", "TEXT NOT NULL DEFAULT 'local'")
         _ensure_column(connection, "capsule_items", "project", "TEXT NOT NULL DEFAULT ''")
         _ensure_column(connection, "capsule_items", "tag", "TEXT NOT NULL DEFAULT ''")
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS diagnostics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                level TEXT NOT NULL,
+                message TEXT NOT NULL,
+                context TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
 
 
 def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
@@ -271,6 +283,52 @@ def set_pinned(entry_id: int, pinned: bool, db_path: Optional[Path] = None) -> b
             (int(pinned), entry_id),
         )
         return cursor.rowcount > 0
+
+
+def log_diagnostic(level: str, message: str, context: str = "", db_path: Optional[Path] = None) -> None:
+    path = db_path or default_db_path()
+    init_db(path)
+    normalized_level = (level or "info").strip().lower()[:20] or "info"
+    with _connect(path) as connection:
+        connection.execute(
+            "INSERT INTO diagnostics (level, message, context) VALUES (?, ?, ?)",
+            (normalized_level, str(message or "")[:500], str(context or "")[:2000]),
+        )
+        connection.execute(
+            """
+            DELETE FROM diagnostics
+            WHERE id NOT IN (
+                SELECT id FROM diagnostics ORDER BY id DESC LIMIT ?
+            )
+            """,
+            (MAX_DIAGNOSTICS,),
+        )
+
+
+def list_diagnostics(limit: int = 12, db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    path = db_path or default_db_path()
+    init_db(path)
+    normalized_limit = max(1, min(int(limit), MAX_DIAGNOSTICS))
+    with _connect(path) as connection:
+        rows = connection.execute(
+            """
+            SELECT id, level, message, context, created_at
+            FROM diagnostics
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (normalized_limit,),
+        ).fetchall()
+    return [
+        {
+            "id": int(row["id"]),
+            "level": str(row["level"] or "info"),
+            "message": str(row["message"] or ""),
+            "context": str(row["context"] or ""),
+            "created_at": str(row["created_at"] or ""),
+        }
+        for row in rows
+    ]
 
 
 def start_capsule(

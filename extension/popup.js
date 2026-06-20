@@ -14,12 +14,14 @@ const exportFormatSelect = document.querySelector("#export-format");
 const exportVisibleButton = document.querySelector("#export-visible");
 const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
 const formatSelect = document.querySelector("#format-mode");
+const diagnosticsList = document.querySelector("#diagnostics");
 const historyList = document.querySelector("#history");
 const latestSource = document.querySelector("#latest-source");
 const labelFilterInput = document.querySelector("#label-filter");
 const openLatestButton = document.querySelector("#open-latest");
 const projectInput = document.querySelector("#project");
 const refreshButton = document.querySelector("#refresh");
+const refreshDiagnosticsButton = document.querySelector("#refresh-diagnostics");
 const resultMeta = document.querySelector("#result-meta");
 const resultMessage = document.querySelector("#result-message");
 const resultPanel = document.querySelector("#last-result");
@@ -67,6 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   refreshButton.addEventListener("click", () => {
     refreshPopup().catch(showError);
+  });
+  refreshDiagnosticsButton.addEventListener("click", () => {
+    loadDiagnostics().catch(showError);
   });
   settingsButton.addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
@@ -118,7 +123,7 @@ async function initializePopup() {
 }
 
 async function refreshPopup() {
-  await Promise.all([loadLastStatus(), loadSummary(), loadCapsuleStatus(), loadHistory()]);
+  await Promise.all([loadLastStatus(), loadSummary(), loadCapsuleStatus(), loadHistory(), loadDiagnostics()]);
 }
 
 async function captureCurrentPage() {
@@ -202,6 +207,14 @@ async function loadHistory() {
   currentEntries = response.entries || [];
   renderHistory(currentEntries);
   setStatus(currentEntries.length ? "History ready." : "No captures yet.");
+}
+
+async function loadDiagnostics() {
+  const response = await sendToBackground({ action: "diagnostics", limit: 8 });
+  if (!response || response.ok !== true) {
+    return;
+  }
+  renderDiagnostics(response.entries || []);
 }
 
 function renderSummary(summary) {
@@ -290,6 +303,27 @@ function renderHistory(entries) {
 
     item.append(copyButton, actions);
     historyList.append(item);
+  }
+}
+
+function renderDiagnostics(entries) {
+  diagnosticsList.replaceChildren();
+  if (!entries.length) {
+    const item = document.createElement("li");
+    item.className = "empty";
+    item.textContent = "No diagnostics yet.";
+    diagnosticsList.append(item);
+    return;
+  }
+
+  for (const entry of entries) {
+    const item = document.createElement("li");
+    item.className = `diagnostic-entry ${entry.level === "error" ? "error" : ""}`;
+    item.append(
+      textNode("strong", "", `${entry.level || "info"} - ${entry.message || ""}`),
+      textNode("span", "", entry.context ? `${entry.created_at} - ${entry.context}` : entry.created_at || "")
+    );
+    diagnosticsList.append(item);
   }
 }
 

@@ -30,8 +30,10 @@ from storage import (
     history_summary,
     init_db,
     insert_entry,
+    list_diagnostics,
     list_entries_for_export,
     list_entries,
+    log_diagnostic,
     set_pinned,
     start_capsule,
 )
@@ -53,7 +55,9 @@ def main() -> int:
                 return 0
             response = handle_message(message)
         except Exception as exc:
-            traceback.print_exc(file=sys.stderr)
+            trace = traceback.format_exc()
+            print(trace, file=sys.stderr)
+            _safe_log("error", str(exc), trace)
             response = {"ok": False, "error": str(exc)}
 
         write_message(response, sys.stdout.buffer)
@@ -87,6 +91,8 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
         return capsule_status()
     if action == "export":
         return export_context(message)
+    if action == "diagnostics":
+        return diagnostics(message)
     return {"ok": False, "error": f"Unknown action: {action}"}
 
 
@@ -131,6 +137,7 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     if auto_pinned:
         set_pinned(entry_id, True)
     capsule = append_entry_to_active_capsule(entry_id, entry) if bool(payload.get("append_to_capsule")) else None
+    _safe_log("info", "capture", f"{entry.title} | {capture_mode} | {format_mode} | {template_id}")
     return {
         "ok": True,
         "id": entry_id,
@@ -217,7 +224,9 @@ def capsule_start(message: Dict[str, Any]) -> Dict[str, Any]:
     title = str(message.get("title") or "").strip() or None
     project = _clean_label(message.get("project"))
     tag = _clean_label(message.get("tag"))
-    return {"ok": True, "capsule": _capsule_summary(start_capsule(title, project=project, tag=tag))}
+    capsule = start_capsule(title, project=project, tag=tag)
+    _safe_log("info", "capsule_start", str(capsule.get("title", "")))
+    return {"ok": True, "capsule": _capsule_summary(capsule)}
 
 
 def capsule_append(message: Dict[str, Any]) -> Dict[str, Any]:
@@ -236,11 +245,14 @@ def capsule_copy() -> Dict[str, Any]:
         return {"ok": False, "error": "No active capsule with captures."}
     markdown = capsule_markdown(capsule)
     clipboard.write_text(markdown)
+    _safe_log("info", "capsule_copy", str(capsule.get("title", "")))
     return {"ok": True, "capsule": _capsule_summary(capsule)}
 
 
 def capsule_clear() -> Dict[str, Any]:
-    return {"ok": True, "deleted": clear_active_capsule()}
+    deleted = clear_active_capsule()
+    _safe_log("info", "capsule_clear", f"deleted={deleted}")
+    return {"ok": True, "deleted": deleted}
 
 
 def capsule_status() -> Dict[str, Any]:
@@ -258,6 +270,7 @@ def export_context(message: Dict[str, Any]) -> Dict[str, Any]:
             return {"ok": False, "error": "No active capsule with captures."}
         text = _export_json(capsule) if export_format == "json" else capsule_markdown(capsule)
         clipboard.write_text(text)
+        _safe_log("info", "export", f"{target} | {export_format} | count={int(capsule['item_count'])}")
         return {"ok": True, "target": target, "format": export_format, "count": int(capsule["item_count"])}
 
     entries = list_entries_for_export() if target == "all" else get_entries_by_ids(_int_list(message.get("ids")))
@@ -266,7 +279,12 @@ def export_context(message: Dict[str, Any]) -> Dict[str, Any]:
 
     text = _export_json(entries) if export_format == "json" else _entries_markdown(entries)
     clipboard.write_text(text)
+    _safe_log("info", "export", f"{target} | {export_format} | count={len(entries)}")
     return {"ok": True, "target": target, "format": export_format, "count": len(entries)}
+
+
+def diagnostics(message: Dict[str, Any]) -> Dict[str, Any]:
+    return {"ok": True, "entries": list_diagnostics(_int_value(message.get("limit"), 12))}
 
 
 def read_message(stream: BinaryIO) -> Optional[Dict[str, Any]]:
@@ -375,6 +393,13 @@ def _entry_labels(entry: Dict[str, Any]) -> str:
 
 def _export_json(value: Any) -> str:
     return json.dumps(value, indent=2, ensure_ascii=False) + "\n"
+
+
+def _safe_log(level: str, message: str, context: str = "") -> None:
+    try:
+        log_diagnostic(level, message, context)
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
