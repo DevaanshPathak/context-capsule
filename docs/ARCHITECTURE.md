@@ -41,6 +41,7 @@ Main actions:
 - `delete`: remove one history entry.
 - `clear`: remove all history entries.
 - `capsule_start`, `capsule_append`, `capsule_copy`, `capsule_clear`, `capsule_status`: manage the active multi-source capsule.
+- `export`: copies visible history, all history, or active capsule as Markdown or JSON.
 
 ## Data Model
 

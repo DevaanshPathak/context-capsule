@@ -155,6 +155,44 @@ def list_entries(limit: int = DEFAULT_HISTORY_LIMIT, db_path: Optional[Path] = N
     return [_history_row_to_dict(row) for row in rows]
 
 
+def list_entries_for_export(db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    path = db_path or default_db_path()
+    init_db(path)
+    with _connect(path) as connection:
+        rows = connection.execute(
+            """
+            SELECT id, url, title, content, markdown, captured_at, fallback_used,
+                   pinned, format_mode, capture_mode, template_id, timestamp_style,
+                   project, tag
+            FROM captures
+            ORDER BY pinned DESC, id DESC
+            """
+        ).fetchall()
+    return [_entry_row_to_dict(row) for row in rows]
+
+
+def get_entries_by_ids(entry_ids: List[int], db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    ids = [int(entry_id) for entry_id in entry_ids if int(entry_id) > 0]
+    if not ids:
+        return []
+    path = db_path or default_db_path()
+    init_db(path)
+    placeholders = ",".join("?" for _ in ids)
+    with _connect(path) as connection:
+        rows = connection.execute(
+            f"""
+            SELECT id, url, title, content, markdown, captured_at, fallback_used,
+                   pinned, format_mode, capture_mode, template_id, timestamp_style,
+                   project, tag
+            FROM captures
+            WHERE id IN ({placeholders})
+            """,
+            ids,
+        ).fetchall()
+    entries = {int(row["id"]): _entry_row_to_dict(row) for row in rows}
+    return [entries[entry_id] for entry_id in ids if entry_id in entries]
+
+
 def history_summary(db_path: Optional[Path] = None) -> Dict[str, Any]:
     path = db_path or default_db_path()
     init_db(path)

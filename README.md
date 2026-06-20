@@ -81,6 +81,7 @@ Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and 
    - The popup can also collect multiple captures into an active capsule and copy them as one combined markdown prompt.
    - Open Settings from the popup to change defaults for capture mode, format, template, history limit, timestamp style, and fallback auto-pin.
    - Project and tag labels can be attached to captures and used to filter history.
+   - Visible history, all history, or the active capsule can be exported to the clipboard as Markdown or JSON.
 
 On macOS, use `Command+Shift+C` and `Command+Shift+H`.
 
@@ -169,6 +170,15 @@ The extension options page stores browser-side defaults in `chrome.storage.local
 
 Use the popup Project and Tag fields before capturing. Labels are stored with history entries and capsule items, shown in entry metadata, and searchable through the project/tag filter.
 
+## Export
+
+The popup Export controls copy generated export text to the clipboard:
+
+- `Visible`: exports the currently visible filtered history rows.
+- `All`: exports all saved history rows.
+- `Capsule`: exports the active multi-source capsule.
+- Format can be Markdown or JSON.
+
 ## Demo Page
 
 Serve `demo.html` through Python's built-in local server for a controlled manual test page with selectable sample text and checklist prompts:
@@ -189,6 +199,7 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Click an older popup entry, then paste. That older markdown block should be copied back to the clipboard.
 - Search history, filter pinned/fallback captures, and open a saved source URL from the popup.
 - Add a project/tag, capture, then filter history by that label.
+- Export visible history, all history, and the active capsule as Markdown and JSON.
 - Pin, unpin, delete, and clear entries from the popup. The list should refresh after each action.
 - Start a capsule, append two pages, copy it, and paste. The output should contain both captures.
 - Switch each format preset and capture once. The pasted output should match the selected preset.

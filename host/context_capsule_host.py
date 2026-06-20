@@ -25,10 +25,12 @@ from storage import (
     clear_entries,
     delete_entry,
     get_active_capsule,
+    get_entries_by_ids,
     get_entry,
     history_summary,
     init_db,
     insert_entry,
+    list_entries_for_export,
     list_entries,
     set_pinned,
     start_capsule,
@@ -83,6 +85,8 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
         return capsule_clear()
     if action == "capsule_status":
         return capsule_status()
+    if action == "export":
+        return export_context(message)
     return {"ok": False, "error": f"Unknown action: {action}"}
 
 
@@ -244,6 +248,27 @@ def capsule_status() -> Dict[str, Any]:
     return {"ok": True, "capsule": _capsule_summary(capsule) if capsule else None}
 
 
+def export_context(message: Dict[str, Any]) -> Dict[str, Any]:
+    target = str(message.get("target") or "visible").lower()
+    export_format = str(message.get("format") or "markdown").lower()
+
+    if target == "capsule":
+        capsule = get_active_capsule()
+        if not capsule or not capsule.get("item_count"):
+            return {"ok": False, "error": "No active capsule with captures."}
+        text = _export_json(capsule) if export_format == "json" else capsule_markdown(capsule)
+        clipboard.write_text(text)
+        return {"ok": True, "target": target, "format": export_format, "count": int(capsule["item_count"])}
+
+    entries = list_entries_for_export() if target == "all" else get_entries_by_ids(_int_list(message.get("ids")))
+    if not entries:
+        return {"ok": False, "error": "No captures to export."}
+
+    text = _export_json(entries) if export_format == "json" else _entries_markdown(entries)
+    clipboard.write_text(text)
+    return {"ok": True, "target": target, "format": export_format, "count": len(entries)}
+
+
 def read_message(stream: BinaryIO) -> Optional[Dict[str, Any]]:
     raw_length = stream.read(4)
     if not raw_length:
@@ -293,6 +318,18 @@ def _int_value(value: Any, fallback: int) -> int:
         return fallback
 
 
+def _int_list(value: Any) -> list[int]:
+    if not isinstance(value, list):
+        return []
+    output: list[int] = []
+    for item in value:
+        try:
+            output.append(int(item))
+        except (TypeError, ValueError):
+            continue
+    return output
+
+
 def _optional_str(value: Any) -> Optional[str]:
     return str(value) if value is not None else None
 
@@ -314,6 +351,30 @@ def _capsule_summary(capsule: Optional[Dict[str, Any]]) -> Optional[Dict[str, An
         "tag": capsule.get("tag", ""),
         "updated_at": capsule.get("updated_at", ""),
     }
+
+
+def _entries_markdown(entries: list[Dict[str, Any]]) -> str:
+    parts = ["# Context Capsule Export"]
+    for index, entry in enumerate(entries, start=1):
+        parts.append(f"## {index}. {entry.get('title') or 'Untitled page'}")
+        labels = _entry_labels(entry)
+        if labels:
+            parts.append(labels)
+        parts.append(str(entry.get("markdown") or "").strip())
+    return "\n\n".join(parts).strip() + "\n"
+
+
+def _entry_labels(entry: Dict[str, Any]) -> str:
+    labels = []
+    if entry.get("project"):
+        labels.append(f"Project: {entry['project']}")
+    if entry.get("tag"):
+        labels.append(f"Tag: {entry['tag']}")
+    return "\n".join(labels)
+
+
+def _export_json(value: Any) -> str:
+    return json.dumps(value, indent=2, ensure_ascii=False) + "\n"
 
 
 if __name__ == "__main__":

@@ -8,6 +8,10 @@ const capsuleCopyButton = document.querySelector("#capsule-copy");
 const capsuleStartButton = document.querySelector("#capsule-start");
 const capsuleStatus = document.querySelector("#capsule-status");
 const clearButton = document.querySelector("#clear");
+const exportAllButton = document.querySelector("#export-all");
+const exportCapsuleButton = document.querySelector("#export-capsule");
+const exportFormatSelect = document.querySelector("#export-format");
+const exportVisibleButton = document.querySelector("#export-visible");
 const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
 const formatSelect = document.querySelector("#format-mode");
 const historyList = document.querySelector("#history");
@@ -51,6 +55,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   clearButton.addEventListener("click", () => {
     clearHistory().catch(showError);
+  });
+  exportVisibleButton.addEventListener("click", () => {
+    exportCaptures("visible").catch(showError);
+  });
+  exportAllButton.addEventListener("click", () => {
+    exportCaptures("all").catch(showError);
+  });
+  exportCapsuleButton.addEventListener("click", () => {
+    exportCaptures("capsule").catch(showError);
   });
   refreshButton.addEventListener("click", () => {
     refreshPopup().catch(showError);
@@ -394,6 +407,19 @@ async function clearHistory() {
   renderHistory([]);
   renderSummary({ total: 0, pinned: 0, fallback_used: 0 });
   setStatus(`Cleared ${response.deleted || 0} captures.`);
+}
+
+async function exportCaptures(target) {
+  const response = await sendToBackground({
+    action: "export",
+    target,
+    format: exportFormatSelect.value,
+    ids: target === "visible" ? filterEntries(currentEntries).map((entry) => entry.id) : []
+  });
+  if (!response || response.ok !== true) {
+    throw new Error(response && response.error ? response.error : "Could not export captures.");
+  }
+  setStatus(`Exported ${response.count || 0} item${response.count === 1 ? "" : "s"} as ${response.format}.`);
 }
 
 async function setFormatMode(formatMode) {

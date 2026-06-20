@@ -61,6 +61,7 @@ Using localhost avoids Chrome's file URL extension restrictions.
 17. Switch between None, Summarize, Debug, Explain docs, and Notes templates.
 18. Open Settings, change defaults, close and reopen the popup, and verify the saved defaults are applied.
 19. Add a project/tag, capture a page, and filter history by that label.
+20. Export visible history, all history, and active capsule in Markdown and JSON.
 
 ## Expected Output
 

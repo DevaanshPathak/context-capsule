@@ -244,6 +244,34 @@ input {
   font-size: 12px;
 }
 
+.export-panel {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, minmax(64px, auto));
+  gap: 6px;
+  align-items: end;
+  margin-top: 10px;
+}
+
+.export-panel label {
+  display: grid;
+  gap: 4px;
+}
+
+.export-panel span {
+  color: color-mix(in srgb, CanvasText 68%, transparent);
+  font-size: 12px;
+}
+
+.export-panel select {
+  width: 100%;
+}
+
+.export-panel button {
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
 .history-heading {
   margin-top: 14px;
 }
