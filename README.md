@@ -225,3 +225,11 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Run `python install.py --doctor`. It should show PASS/FAIL rows for dependency, clipboard, host launch, manifest, and browser registration checks.
 - Open Settings from the popup, change defaults, reopen the popup, and verify the controls keep the saved values.
 - Re-run `python install.py`. It should complete cleanly without manual JSON or registry edits.
+
+## Automated Tests
+
+Run the stdlib test suite:
+
+```powershell
+python -m unittest
+```
