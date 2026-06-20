@@ -233,3 +233,7 @@ Run the stdlib test suite:
 ```powershell
 python -m unittest
 ```
+
+## Packaging Prototype
+
+Windows installer notes and an Inno Setup prototype live in `packaging/windows/`.

@@ -5,4 +5,6 @@ __pycache__/
 bin/
 native-hosts/
 data/
-
+build/
+dist/
+*.spec
