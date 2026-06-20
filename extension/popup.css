@@ -279,7 +279,7 @@ input {
 
 .export-panel {
   display: grid;
-  grid-template-columns: 1fr repeat(3, minmax(64px, auto));
+  grid-template-columns: 1fr repeat(4, minmax(58px, auto));
   gap: 6px;
   align-items: end;
   margin-top: 10px;

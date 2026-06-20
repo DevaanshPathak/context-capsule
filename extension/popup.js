@@ -16,6 +16,7 @@ const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
 const formatSelect = document.querySelector("#format-mode");
 const diagnosticsList = document.querySelector("#diagnostics");
 const dismissOnboardingButton = document.querySelector("#dismiss-onboarding");
+const demoPromptButton = document.querySelector("#demo-prompt");
 const historyList = document.querySelector("#history");
 const latestSource = document.querySelector("#latest-source");
 const labelFilterInput = document.querySelector("#label-filter");
@@ -75,6 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   exportCapsuleButton.addEventListener("click", () => {
     exportCaptures("capsule").catch(showError);
+  });
+  demoPromptButton.addEventListener("click", () => {
+    copyDemoPrompt().catch(showError);
   });
   refreshButton.addEventListener("click", () => {
     refreshPopup().catch(showError);
@@ -474,6 +478,15 @@ async function exportCaptures(target) {
     throw new Error(response && response.error ? response.error : "Could not export captures.");
   }
   setStatus(`Exported ${response.count || 0} item${response.count === 1 ? "" : "s"} as ${response.format}.`);
+}
+
+async function copyDemoPrompt() {
+  const response = await sendToBackground({ action: "demo_prompt" });
+  if (!response || response.ok !== true) {
+    throw new Error(response && response.error ? response.error : "Could not copy demo prompt.");
+  }
+  setStatus(`Copied demo prompt from ${response.source} (${response.count || 0} items).`);
+  await loadDiagnostics();
 }
 
 async function setFormatMode(formatMode) {

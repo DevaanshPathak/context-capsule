@@ -93,6 +93,8 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
         return export_context(message)
     if action == "diagnostics":
         return diagnostics(message)
+    if action == "demo_prompt":
+        return demo_prompt()
     return {"ok": False, "error": f"Unknown action: {action}"}
 
 
@@ -285,6 +287,31 @@ def export_context(message: Dict[str, Any]) -> Dict[str, Any]:
 
 def diagnostics(message: Dict[str, Any]) -> Dict[str, Any]:
     return {"ok": True, "entries": list_diagnostics(_int_value(message.get("limit"), 12))}
+
+
+def demo_prompt() -> Dict[str, Any]:
+    capsule = get_active_capsule()
+    if capsule and capsule.get("item_count"):
+        context = capsule_markdown(capsule)
+        source = "capsule"
+        count = int(capsule["item_count"])
+    else:
+        entries = list_entries_for_export()[:3]
+        if not entries:
+            return {"ok": False, "error": "No captures available for a demo prompt."}
+        context = _entries_markdown(entries)
+        source = "history"
+        count = len(entries)
+
+    prompt = (
+        "I captured this context with Context Capsule. "
+        "Show how you would help using the source links, selected text, and local history below. "
+        "Start with a short summary, then list practical next steps.\n\n"
+        f"{context}"
+    )
+    clipboard.write_text(prompt)
+    _safe_log("info", "demo_prompt", f"{source} | count={count}")
+    return {"ok": True, "source": source, "count": count}
 
 
 def read_message(stream: BinaryIO) -> Optional[Dict[str, Any]]:

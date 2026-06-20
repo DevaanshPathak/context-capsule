@@ -84,6 +84,7 @@ Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and 
    - Visible history, all history, or the active capsule can be exported to the clipboard as Markdown or JSON.
    - The popup includes a diagnostics viewer for recent host events and errors.
    - First-run onboarding gives hotkeys, doctor command, and demo page access.
+   - A Demo Prompt button copies a polished example prompt from the active capsule or recent history.
 
 On macOS, use `Command+Shift+C` and `Command+Shift+H`.
 
@@ -189,6 +190,10 @@ The host stores a capped local diagnostics log for recent captures, exports, cap
 
 The popup shows a first-run Quick Start card until dismissed. It links to the localhost demo page and reminds users about the capture/history hotkeys and doctor command.
 
+## Demo Prompt
+
+The popup Demo Prompt button copies a polished prompt using the active capsule when one exists, otherwise the latest three captures. This is designed for quick hackathon demos and judge walkthroughs.
+
 ## Demo Page
 
 Serve `demo.html` through Python's built-in local server for a controlled manual test page with selectable sample text and checklist prompts:
@@ -212,6 +217,7 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Export visible history, all history, and the active capsule as Markdown and JSON.
 - Confirm the Diagnostics section shows recent capture/export events, and errors when an action fails.
 - Dismiss the Quick Start card, reopen the popup, and confirm it stays dismissed.
+- Click Demo Prompt after creating captures and paste it into an editor. It should include a polished instruction and recent context.
 - Pin, unpin, delete, and clear entries from the popup. The list should refresh after each action.
 - Start a capsule, append two pages, copy it, and paste. The output should contain both captures.
 - Switch each format preset and capture once. The pasted output should match the selected preset.
