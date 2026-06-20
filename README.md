@@ -83,6 +83,7 @@ Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and 
    - Project and tag labels can be attached to captures and used to filter history.
    - Visible history, all history, or the active capsule can be exported to the clipboard as Markdown or JSON.
    - The popup includes a diagnostics viewer for recent host events and errors.
+   - First-run onboarding gives hotkeys, doctor command, and demo page access.
 
 On macOS, use `Command+Shift+C` and `Command+Shift+H`.
 
@@ -184,6 +185,10 @@ The popup Export controls copy generated export text to the clipboard:
 
 The host stores a capped local diagnostics log for recent captures, exports, capsule actions, and errors. The popup Diagnostics section shows the latest entries so native messaging and clipboard failures are easier to debug.
 
+## Onboarding
+
+The popup shows a first-run Quick Start card until dismissed. It links to the localhost demo page and reminds users about the capture/history hotkeys and doctor command.
+
 ## Demo Page
 
 Serve `demo.html` through Python's built-in local server for a controlled manual test page with selectable sample text and checklist prompts:
@@ -206,6 +211,7 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Add a project/tag, capture, then filter history by that label.
 - Export visible history, all history, and the active capsule as Markdown and JSON.
 - Confirm the Diagnostics section shows recent capture/export events, and errors when an action fails.
+- Dismiss the Quick Start card, reopen the popup, and confirm it stays dismissed.
 - Pin, unpin, delete, and clear entries from the popup. The list should refresh after each action.
 - Start a capsule, append two pages, copy it, and paste. The output should contain both captures.
 - Switch each format preset and capture once. The pasted output should match the selected preset.

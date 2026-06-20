@@ -15,9 +15,12 @@ const exportVisibleButton = document.querySelector("#export-visible");
 const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
 const formatSelect = document.querySelector("#format-mode");
 const diagnosticsList = document.querySelector("#diagnostics");
+const dismissOnboardingButton = document.querySelector("#dismiss-onboarding");
 const historyList = document.querySelector("#history");
 const latestSource = document.querySelector("#latest-source");
 const labelFilterInput = document.querySelector("#label-filter");
+const onboardingCard = document.querySelector("#onboarding");
+const openDemoButton = document.querySelector("#open-demo");
 const openLatestButton = document.querySelector("#open-latest");
 const projectInput = document.querySelector("#project");
 const refreshButton = document.querySelector("#refresh");
@@ -45,6 +48,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   capsuleStartButton.addEventListener("click", () => {
     startCapsule().catch(showError);
+  });
+  dismissOnboardingButton.addEventListener("click", () => {
+    dismissOnboarding().catch(showError);
+  });
+  openDemoButton.addEventListener("click", () => {
+    openUrl("http://localhost:8765/demo.html");
   });
   capsuleAppendButton.addEventListener("click", () => {
     appendCurrentPageToCapsule().catch(showError);
@@ -106,6 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function initializePopup() {
+  await loadOnboarding();
   const settings = await sendToBackground({ action: "get-settings" });
   if (settings && settings.ok === true && settings.format_mode) {
     formatSelect.value = settings.format_mode;
@@ -120,6 +130,16 @@ async function initializePopup() {
     historyLimit = settings.history_limit;
   }
   await refreshPopup();
+}
+
+async function loadOnboarding() {
+  const items = await chromeStorageGet(["onboardingDismissed"]);
+  onboardingCard.hidden = Boolean(items.onboardingDismissed);
+}
+
+async function dismissOnboarding() {
+  await chromeStorageSet({ onboardingDismissed: true });
+  onboardingCard.hidden = true;
 }
 
 async function refreshPopup() {
@@ -496,6 +516,18 @@ function sendToBackground(payload) {
       }
       resolve(response);
     });
+  });
+}
+
+function chromeStorageGet(keys) {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, (items) => resolve(items || {}));
+  });
+}
+
+function chromeStorageSet(values) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set(values, () => resolve());
   });
 }
 

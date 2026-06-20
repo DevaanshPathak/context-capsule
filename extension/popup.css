@@ -66,6 +66,39 @@ h2 {
   gap: 6px;
 }
 
+.onboarding-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, #315b96 45%, CanvasText 10%);
+  border-radius: 6px;
+  background: color-mix(in srgb, #315b96 12%, Canvas 88%);
+}
+
+.onboarding-card[hidden] {
+  display: none;
+}
+
+.onboarding-card p {
+  margin-top: 4px;
+  color: color-mix(in srgb, CanvasText 72%, transparent);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.onboarding-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.onboarding-actions button {
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
 button,
 select,
 input {
