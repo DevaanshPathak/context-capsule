@@ -20,6 +20,7 @@ class CaptureEntry:
     captured_at: str
     fallback_used: bool
     format_mode: str = "markdown"
+    capture_mode: str = "smart"
 
 
 def default_db_path() -> Path:
@@ -44,12 +45,14 @@ def init_db(db_path: Optional[Path] = None) -> None:
                 captured_at TEXT NOT NULL,
                 fallback_used INTEGER NOT NULL,
                 format_mode TEXT NOT NULL DEFAULT 'markdown',
+                capture_mode TEXT NOT NULL DEFAULT 'smart',
                 pinned INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
         _ensure_column(connection, "captures", "format_mode", "TEXT NOT NULL DEFAULT 'markdown'")
+        _ensure_column(connection, "captures", "capture_mode", "TEXT NOT NULL DEFAULT 'smart'")
         _ensure_column(connection, "captures", "pinned", "INTEGER NOT NULL DEFAULT 0")
 
 
@@ -59,8 +62,8 @@ def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
     with _connect(path) as connection:
         cursor = connection.execute(
             """
-            INSERT INTO captures (url, title, content, markdown, captured_at, fallback_used, format_mode)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO captures (url, title, content, markdown, captured_at, fallback_used, format_mode, capture_mode)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 entry.url,
@@ -70,6 +73,7 @@ def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
                 entry.captured_at,
                 int(entry.fallback_used),
                 entry.format_mode,
+                entry.capture_mode,
             ),
         )
         _prune_history(connection, MAX_HISTORY_ENTRIES)
@@ -83,7 +87,7 @@ def list_entries(limit: int = DEFAULT_HISTORY_LIMIT, db_path: Optional[Path] = N
     with _connect(path) as connection:
         rows = connection.execute(
             """
-            SELECT id, url, title, content, captured_at, fallback_used, pinned, format_mode
+            SELECT id, url, title, content, captured_at, fallback_used, pinned, format_mode, capture_mode
             FROM captures
             ORDER BY pinned DESC, id DESC
             LIMIT ?
@@ -137,7 +141,7 @@ def get_entry(entry_id: int, db_path: Optional[Path] = None) -> Optional[Dict[st
     with _connect(path) as connection:
         row = connection.execute(
             """
-            SELECT id, url, title, content, markdown, captured_at, fallback_used, pinned, format_mode
+            SELECT id, url, title, content, markdown, captured_at, fallback_used, pinned, format_mode, capture_mode
             FROM captures
             WHERE id = ?
             """,
@@ -218,6 +222,7 @@ def _history_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         "fallback_used": bool(row["fallback_used"]),
         "pinned": _row_bool(row, "pinned"),
         "format_mode": _row_text(row, "format_mode", "markdown"),
+        "capture_mode": _row_text(row, "capture_mode", "smart"),
         "preview": _preview(content),
     }
 

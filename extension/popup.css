@@ -88,7 +88,7 @@ button:disabled {
 }
 
 select {
-  width: 112px;
+  width: 116px;
   padding: 6px 8px;
 }
 
@@ -130,11 +130,13 @@ input {
 
 .capture-panel {
   align-items: flex-end;
+  flex-wrap: wrap;
   margin-top: 12px;
 }
 
 .primary-button {
   flex: 1;
+  min-width: 170px;
   border-color: #315b96;
   background: #315b96;
   color: #fff;

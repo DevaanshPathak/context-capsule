@@ -56,6 +56,7 @@ Using localhost avoids Chrome's file URL extension restrictions.
 12. Search history, filter pinned/fallback captures, and open a saved source URL.
 13. Pin, unpin, delete, and clear history entries.
 14. Switch between Markdown, Compact, and Prompt formats and capture once per preset.
+15. Switch between Smart, Selection, Clipboard, Page only, Visible text, and Readable text capture modes.
 
 ## Expected Output
 

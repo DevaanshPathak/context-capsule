@@ -5,6 +5,7 @@ from typing import Optional
 
 
 FORMAT_MODES = {"markdown", "compact", "prompt"}
+CAPTURE_MODES = {"smart", "selection", "clipboard", "metadata", "visible", "readable"}
 
 
 def build_markdown(
@@ -37,6 +38,11 @@ def build_markdown(
 def normalize_format_mode(format_mode: str) -> str:
     mode = (format_mode or "markdown").strip().lower()
     return mode if mode in FORMAT_MODES else "markdown"
+
+
+def normalize_capture_mode(capture_mode: str) -> str:
+    mode = (capture_mode or "smart").strip().lower()
+    return mode if mode in CAPTURE_MODES else "smart"
 
 
 def format_timestamp(raw_timestamp: Optional[str]) -> str:

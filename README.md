@@ -77,7 +77,7 @@ Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and 
    - `Ctrl+Shift+C` captures the active page context.
    - `Ctrl+Shift+H` opens history.
    - Clicking the toolbar icon opens the popup dashboard.
-   - The popup can capture the current page, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
+   - The popup can capture the current page, switch capture modes, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
 
 On macOS, use `Command+Shift+C` and `Command+Shift+H`.
 
@@ -125,6 +125,15 @@ Pinned entries float to the top and are protected from automatic pruning. The ex
 
 The popup remembers the most recent preset and stores the preset name with each history entry.
 
+## Capture Modes
+
+- `Smart`: selected text with clipboard fallback.
+- `Selection`: selected text only.
+- `Clipboard`: current clipboard content with page source.
+- `Page only`: page title and URL only.
+- `Visible text`: readable text currently visible in the viewport.
+- `Readable text`: cleaned text from the page's main/article/body content.
+
 ## Demo Page
 
 Serve `demo.html` through Python's built-in local server for a controlled manual test page with selectable sample text and checklist prompts:
@@ -141,6 +150,7 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Click into a page with no selected text, copy some fallback text manually, press `Ctrl+Shift+C`, then paste. The markdown body should contain the previous clipboard text.
 - Press `Ctrl+Shift+H` or click the toolbar icon. The popup should show last capture status, summary counts, search/filter controls, and recent captures.
 - Click "Capture Current Page" in the popup. It should perform the same capture as the hotkey.
+- Switch each capture mode and capture once. The pasted output should match the selected mode.
 - Click an older popup entry, then paste. That older markdown block should be copied back to the clipboard.
 - Search history, filter pinned/fallback captures, and open a saved source URL from the popup.
 - Pin, unpin, delete, and clear entries from the popup. The list should refresh after each action.

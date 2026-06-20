@@ -1,6 +1,7 @@
 const DEFAULT_LIMIT = 20;
 
 const captureButton = document.querySelector("#capture");
+const captureModeSelect = document.querySelector("#capture-mode");
 const clearButton = document.querySelector("#clear");
 const filterButtons = Array.from(document.querySelectorAll(".filter-button"));
 const formatSelect = document.querySelector("#format-mode");
@@ -34,6 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
   formatSelect.addEventListener("change", () => {
     setFormatMode(formatSelect.value).catch(showError);
   });
+  captureModeSelect.addEventListener("change", () => {
+    setCaptureMode(captureModeSelect.value).catch(showError);
+  });
   searchInput.addEventListener("input", () => {
     renderHistory(currentEntries);
   });
@@ -56,6 +60,9 @@ async function initializePopup() {
   if (settings && settings.ok === true && settings.format_mode) {
     formatSelect.value = settings.format_mode;
   }
+  if (settings && settings.ok === true && settings.capture_mode) {
+    captureModeSelect.value = settings.capture_mode;
+  }
   await refreshPopup();
 }
 
@@ -69,7 +76,8 @@ async function captureCurrentPage() {
   try {
     const response = await sendToBackground({
       action: "capture-active-tab",
-      format_mode: formatSelect.value
+      format_mode: formatSelect.value,
+      capture_mode: captureModeSelect.value
     });
     if (!response || response.ok !== true) {
       throw new Error(response && response.error ? response.error : "Capture failed.");
@@ -271,6 +279,16 @@ async function setFormatMode(formatMode) {
   }
 }
 
+async function setCaptureMode(captureMode) {
+  const response = await sendToBackground({
+    action: "set-capture-mode",
+    capture_mode: captureMode
+  });
+  if (!response || response.ok !== true) {
+    throw new Error(response && response.error ? response.error : "Could not save capture mode.");
+  }
+}
+
 function sendToBackground(payload) {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ source: "context-capsule-popup", payload }, (response) => {
@@ -317,7 +335,7 @@ function textNode(tagName, className, value) {
 }
 
 function entryMeta(entry) {
-  const parts = [entry.captured_at || "Unknown time", entry.format_mode || "markdown"];
+  const parts = [entry.captured_at || "Unknown time", entry.capture_mode || "smart", entry.format_mode || "markdown"];
   if (entry.fallback_used) {
     parts.push("clipboard fallback");
   }
@@ -331,6 +349,9 @@ function statusMeta(status) {
   }
   if (status.format_mode) {
     parts.push(status.format_mode);
+  }
+  if (status.capture_mode) {
+    parts.push(status.capture_mode);
   }
   if (status.fallback_used) {
     parts.push("clipboard fallback");

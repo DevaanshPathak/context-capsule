@@ -5,7 +5,7 @@ Context Capsule is intentionally split so the browser extension stays thin and t
 ## Runtime Flow
 
 1. The user presses `Ctrl+Shift+C` or clicks `Capture Current Page` in the popup.
-2. `extension/background.js` finds the active tab and asks `extension/content.js` for the current selection.
+2. `extension/background.js` finds the active tab and asks `extension/content.js` for selection, visible text, and readable page text.
 3. The background service worker opens the Python host with `chrome.runtime.connectNative`.
 4. `host/context_capsule_host.py` receives a length-prefixed JSON message.
 5. The host falls back to the current clipboard if the page selection is empty.
@@ -50,6 +50,7 @@ Important fields:
 - `captured_at`
 - `fallback_used`
 - `format_mode`
+- `capture_mode`
 - `pinned`
 
 Pinned entries float to the top and are protected from automatic pruning. The popup's explicit Clear action removes all entries.

@@ -1,4 +1,5 @@
 const HOST_NAME = "com.context_capsule.host";
+const CAPTURE_MODE_KEY = "captureMode";
 const LAST_STATUS_KEY = "lastCaptureStatus";
 const FORMAT_MODE_KEY = "formatMode";
 
@@ -34,7 +35,7 @@ async function handlePopupMessage(payload) {
   }
 
   if (payload.action === "capture-active-tab") {
-    return captureActiveTab({ formatMode: payload.format_mode });
+    return captureActiveTab({ formatMode: payload.format_mode, captureMode: payload.capture_mode });
   }
 
   if (payload.action === "last-status") {
@@ -42,12 +43,17 @@ async function handlePopupMessage(payload) {
   }
 
   if (payload.action === "get-settings") {
-    return { ok: true, format_mode: await getStoredFormatMode() };
+    return { ok: true, format_mode: await getStoredFormatMode(), capture_mode: await getStoredCaptureMode() };
   }
 
   if (payload.action === "set-format-mode") {
     await setStoredFormatMode(payload.format_mode);
     return { ok: true, format_mode: normalizeFormatMode(payload.format_mode) };
+  }
+
+  if (payload.action === "set-capture-mode") {
+    await setStoredCaptureMode(payload.capture_mode);
+    return { ok: true, capture_mode: normalizeCaptureMode(payload.capture_mode) };
   }
 
   const response = await sendToNative(payload);
@@ -69,17 +75,22 @@ async function captureActiveTab(options = {}) {
   }
 
   const formatMode = normalizeFormatMode(options.formatMode || (await getStoredFormatMode()));
+  const captureMode = normalizeCaptureMode(options.captureMode || (await getStoredCaptureMode()));
   await setStoredFormatMode(formatMode);
+  await setStoredCaptureMode(captureMode);
 
-  const selection = await getSelection(tab.id);
+  const pageContext = await getPageContext(tab.id);
   const response = await sendToNative({
     action: "capture",
     payload: {
       url: tab.url || "",
       title: tab.title || "Untitled page",
-      selection,
+      selection: pageContext.selection,
+      visible_text: pageContext.visibleText,
+      readable_text: pageContext.readableText,
       timestamp: new Date().toISOString(),
-      format_mode: formatMode
+      format_mode: formatMode,
+      capture_mode: captureMode
     }
   });
 
@@ -96,7 +107,8 @@ async function captureActiveTab(options = {}) {
     fallback_used: Boolean(response.fallback_used),
     captured_at: response.captured_at || "",
     format_mode: response.format_mode || formatMode,
-    message: response.fallback_used ? "Copied with clipboard fallback." : "Copied selected page text.",
+    capture_mode: response.capture_mode || captureMode,
+    message: captureStatusMessage(response.capture_mode || captureMode, Boolean(response.fallback_used)),
     timestamp: new Date().toISOString()
   };
   await saveLastStatus(status);
@@ -105,17 +117,22 @@ async function captureActiveTab(options = {}) {
 }
 
 async function getSelection(tabId) {
+  const context = await getPageContext(tabId);
+  return context.selection;
+}
+
+async function getPageContext(tabId) {
   try {
-    const response = await sendTabMessage(tabId, { type: "get-selection" });
-    return response && typeof response.selection === "string" ? response.selection : "";
+    const response = await sendTabMessage(tabId, { type: "get-page-context" });
+    return normalizePageContext(response);
   } catch (_error) {
     try {
       await executeScript({ target: { tabId }, files: ["content.js"] });
-      const response = await sendTabMessage(tabId, { type: "get-selection" });
-      return response && typeof response.selection === "string" ? response.selection : "";
+      const response = await sendTabMessage(tabId, { type: "get-page-context" });
+      return normalizePageContext(response);
     } catch (error) {
       console.warn("Context Capsule could not read page selection:", error);
-      return "";
+      return normalizePageContext(null);
     }
   }
 }
@@ -203,15 +220,57 @@ function getStoredFormatMode() {
   });
 }
 
+function getStoredCaptureMode() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([CAPTURE_MODE_KEY], (items) => {
+      resolve(normalizeCaptureMode(items[CAPTURE_MODE_KEY]));
+    });
+  });
+}
+
 function setStoredFormatMode(formatMode) {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [FORMAT_MODE_KEY]: normalizeFormatMode(formatMode) }, () => resolve());
   });
 }
 
+function setStoredCaptureMode(captureMode) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [CAPTURE_MODE_KEY]: normalizeCaptureMode(captureMode) }, () => resolve());
+  });
+}
+
 function normalizeFormatMode(formatMode) {
   const mode = String(formatMode || "markdown").toLowerCase();
   return ["markdown", "compact", "prompt"].includes(mode) ? mode : "markdown";
+}
+
+function normalizeCaptureMode(captureMode) {
+  const mode = String(captureMode || "smart").toLowerCase();
+  return ["smart", "selection", "clipboard", "metadata", "visible", "readable"].includes(mode) ? mode : "smart";
+}
+
+function normalizePageContext(response) {
+  return {
+    selection: response && typeof response.selection === "string" ? response.selection : "",
+    visibleText: response && typeof response.visibleText === "string" ? response.visibleText : "",
+    readableText: response && typeof response.readableText === "string" ? response.readableText : ""
+  };
+}
+
+function captureStatusMessage(captureMode, fallbackUsed) {
+  if (fallbackUsed) {
+    return "Copied with clipboard fallback.";
+  }
+  const labels = {
+    smart: "Copied selected page text.",
+    selection: "Copied selected text only.",
+    clipboard: "Copied clipboard content with page source.",
+    metadata: "Copied page title and URL.",
+    visible: "Copied visible page text.",
+    readable: "Copied readable page text."
+  };
+  return labels[captureMode] || labels.smart;
 }
 
 function failureStatus(error) {

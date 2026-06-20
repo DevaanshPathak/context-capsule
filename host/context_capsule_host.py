@@ -8,7 +8,7 @@ import traceback
 from typing import Any, BinaryIO, Dict, Optional
 
 import clipboard
-from formatter import build_markdown, format_timestamp, normalize_format_mode
+from formatter import build_markdown, format_timestamp, normalize_capture_mode, normalize_format_mode
 from storage import (
     CaptureEntry,
     clear_entries,
@@ -65,8 +65,8 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
 
 def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     selection = str(payload.get("selection") or "")
-    fallback_used = not bool(selection.strip())
-    content = clipboard.read_text() if fallback_used else selection
+    capture_mode = normalize_capture_mode(str(payload.get("capture_mode") or "smart"))
+    content, fallback_used = _content_for_capture_mode(capture_mode, payload, selection)
     captured_at = format_timestamp(_optional_str(payload.get("timestamp")))
     format_mode = normalize_format_mode(str(payload.get("format_mode") or payload.get("format") or "markdown"))
     markdown = build_markdown(
@@ -87,6 +87,7 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
             captured_at=captured_at,
             fallback_used=fallback_used,
             format_mode=format_mode,
+            capture_mode=capture_mode,
         )
     )
     return {
@@ -95,9 +96,26 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         "fallback_used": fallback_used,
         "captured_at": captured_at,
         "format_mode": format_mode,
+        "capture_mode": capture_mode,
         "title": str(payload.get("title") or "Untitled page"),
         "url": str(payload.get("url") or ""),
     }
+
+
+def _content_for_capture_mode(capture_mode: str, payload: Dict[str, Any], selection: str) -> tuple[str, bool]:
+    if capture_mode == "selection":
+        return selection, False
+    if capture_mode == "clipboard":
+        return clipboard.read_text(), True
+    if capture_mode == "metadata":
+        return "", False
+    if capture_mode == "visible":
+        return str(payload.get("visible_text") or ""), False
+    if capture_mode == "readable":
+        return str(payload.get("readable_text") or payload.get("visible_text") or ""), False
+
+    fallback_used = not bool(selection.strip())
+    return (clipboard.read_text(), True) if fallback_used else (selection, False)
 
 
 def history(message: Dict[str, Any]) -> Dict[str, Any]:

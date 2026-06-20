@@ -33,6 +33,17 @@
 
       <section class="capture-panel" aria-label="Capture controls">
         <button id="capture" class="primary-button" type="button">Capture Current Page</button>
+        <label class="format-control" for="capture-mode">
+          <span>Mode</span>
+          <select id="capture-mode">
+            <option value="smart">Smart</option>
+            <option value="selection">Selection</option>
+            <option value="clipboard">Clipboard</option>
+            <option value="metadata">Page only</option>
+            <option value="visible">Visible text</option>
+            <option value="readable">Readable text</option>
+          </select>
+        </label>
         <label class="format-control" for="format-mode">
           <span>Format</span>
           <select id="format-mode">
