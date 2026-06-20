@@ -7,6 +7,7 @@ from typing import Optional
 FORMAT_MODES = {"markdown", "compact", "prompt"}
 CAPTURE_MODES = {"smart", "selection", "clipboard", "metadata", "visible", "readable"}
 TEMPLATE_IDS = {"none", "summarize", "debug", "explain", "notes"}
+TIMESTAMP_STYLES = {"local", "iso", "date"}
 
 
 def build_markdown(
@@ -16,12 +17,13 @@ def build_markdown(
     captured_at: Optional[str] = None,
     format_mode: str = "markdown",
     template_id: str = "none",
+    timestamp_style: str = "local",
 ) -> str:
     mode = normalize_format_mode(format_mode)
     clean_title = (title or "Untitled page").strip() or "Untitled page"
     page_title = _escape_link_text(clean_title)
     page_url = (url or "").strip()
-    captured = format_timestamp(captured_at)
+    captured = format_timestamp(captured_at, timestamp_style)
 
     if mode == "compact":
         context = f"Source: {clean_title} - {page_url}\nCaptured: {captured}\n\n{body}"
@@ -67,19 +69,34 @@ def apply_prompt_template(context: str, template_id: str) -> str:
     return context
 
 
-def format_timestamp(raw_timestamp: Optional[str]) -> str:
+def normalize_timestamp_style(timestamp_style: str) -> str:
+    candidate = (timestamp_style or "local").strip().lower()
+    return candidate if candidate in TIMESTAMP_STYLES else "local"
+
+
+def format_timestamp(raw_timestamp: Optional[str], timestamp_style: str = "local") -> str:
+    style = normalize_timestamp_style(timestamp_style)
     if not raw_timestamp:
-        return datetime.now().strftime("%Y-%m-%d %H:%M")
+        parsed = datetime.now()
+        return _format_datetime(parsed, style)
 
     text = raw_timestamp.strip()
     try:
         parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
     except ValueError:
-        return datetime.now().strftime("%Y-%m-%d %H:%M")
+        return _format_datetime(datetime.now(), style)
 
     if parsed.tzinfo is not None:
         parsed = parsed.astimezone()
 
+    return _format_datetime(parsed, style)
+
+
+def _format_datetime(parsed: datetime, timestamp_style: str) -> str:
+    if timestamp_style == "iso":
+        return parsed.isoformat(timespec="minutes")
+    if timestamp_style == "date":
+        return parsed.strftime("%Y-%m-%d")
     return parsed.strftime("%Y-%m-%d %H:%M")
 
 

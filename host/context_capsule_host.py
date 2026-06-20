@@ -14,6 +14,7 @@ from formatter import (
     normalize_capture_mode,
     normalize_format_mode,
     normalize_template_id,
+    normalize_timestamp_style,
 )
 from storage import (
     CaptureEntry,
@@ -89,16 +90,19 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     selection = str(payload.get("selection") or "")
     capture_mode = normalize_capture_mode(str(payload.get("capture_mode") or "smart"))
     content, fallback_used = _content_for_capture_mode(capture_mode, payload, selection)
-    captured_at = format_timestamp(_optional_str(payload.get("timestamp")))
+    raw_timestamp = _optional_str(payload.get("timestamp"))
+    timestamp_style = normalize_timestamp_style(str(payload.get("timestamp_style") or "local"))
+    captured_at = format_timestamp(raw_timestamp, timestamp_style)
     format_mode = normalize_format_mode(str(payload.get("format_mode") or payload.get("format") or "markdown"))
     template_id = normalize_template_id(str(payload.get("template_id") or "none"))
     markdown = build_markdown(
         url=str(payload.get("url") or ""),
         title=str(payload.get("title") or "Untitled page"),
         body=content,
-        captured_at=captured_at,
+        captured_at=raw_timestamp,
         format_mode=format_mode,
         template_id=template_id,
+        timestamp_style=timestamp_style,
     )
 
     clipboard.write_text(markdown)
@@ -112,8 +116,12 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         format_mode=format_mode,
         capture_mode=capture_mode,
         template_id=template_id,
+        timestamp_style=timestamp_style,
     )
     entry_id = insert_entry(entry)
+    auto_pinned = bool(payload.get("auto_pin_fallback")) and fallback_used
+    if auto_pinned:
+        set_pinned(entry_id, True)
     capsule = append_entry_to_active_capsule(entry_id, entry) if bool(payload.get("append_to_capsule")) else None
     return {
         "ok": True,
@@ -123,6 +131,8 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         "format_mode": format_mode,
         "capture_mode": capture_mode,
         "template_id": template_id,
+        "timestamp_style": timestamp_style,
+        "pinned": auto_pinned,
         "title": str(payload.get("title") or "Untitled page"),
         "url": str(payload.get("url") or ""),
         "capsule": _capsule_summary(capsule) if capsule else None,

@@ -21,6 +21,7 @@
     "default_popup": "popup.html",
     "default_title": "Context Capsule"
   },
+  "options_page": "options.html",
   "commands": {
     "capture-context": {
       "suggested_key": {

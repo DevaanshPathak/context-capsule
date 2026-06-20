@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Context Capsule Settings</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Context Capsule Settings</h1>
+        <p id="status" role="status">Defaults apply to popup and hotkey captures.</p>
+      </header>
+
+      <form id="settings-form">
+        <label>
+          <span>Default capture mode</span>
+          <select id="capture-mode">
+            <option value="smart">Smart</option>
+            <option value="selection">Selection</option>
+            <option value="clipboard">Clipboard</option>
+            <option value="metadata">Page only</option>
+            <option value="visible">Visible text</option>
+            <option value="readable">Readable text</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Default format</span>
+          <select id="format-mode">
+            <option value="markdown">Markdown</option>
+            <option value="compact">Compact</option>
+            <option value="prompt">Prompt</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Default template</span>
+          <select id="template-id">
+            <option value="none">None</option>
+            <option value="summarize">Summarize</option>
+            <option value="debug">Debug</option>
+            <option value="explain">Explain docs</option>
+            <option value="notes">Notes</option>
+          </select>
+        </label>
+
+        <label>
+          <span>History rows in popup</span>
+          <input id="history-limit" type="number" min="5" max="100" step="5">
+        </label>
+
+        <label>
+          <span>Timestamp style</span>
+          <select id="timestamp-style">
+            <option value="local">Local date and time</option>
+            <option value="iso">ISO timestamp</option>
+            <option value="date">Date only</option>
+          </select>
+        </label>
+
+        <label class="checkbox-row">
+          <input id="auto-pin-fallback" type="checkbox">
+          <span>Auto-pin captures that use clipboard fallback</span>
+        </label>
+
+        <div class="actions">
+          <button type="submit">Save Settings</button>
+          <button id="reset" type="button">Reset</button>
+        </div>
+      </form>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>

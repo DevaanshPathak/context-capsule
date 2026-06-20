@@ -79,6 +79,7 @@ Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and 
    - Clicking the toolbar icon opens the popup dashboard.
    - The popup can capture the current page, switch capture modes, apply prompt templates, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
    - The popup can also collect multiple captures into an active capsule and copy them as one combined markdown prompt.
+   - Open Settings from the popup to change defaults for capture mode, format, template, history limit, timestamp style, and fallback auto-pin.
 
 On macOS, use `Command+Shift+C` and `Command+Shift+H`.
 
@@ -152,6 +153,17 @@ Use the popup's Capsule section to collect multiple captures before pasting into
 - `Copy`: copies all capsule items as one combined markdown prompt.
 - `Clear`: removes the active capsule.
 
+## Settings
+
+The extension options page stores browser-side defaults in `chrome.storage.local`:
+
+- default capture mode
+- default format preset
+- default prompt template
+- popup history row count
+- timestamp style
+- auto-pin captures that use clipboard fallback
+
 ## Demo Page
 
 Serve `demo.html` through Python's built-in local server for a controlled manual test page with selectable sample text and checklist prompts:
@@ -176,4 +188,5 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Switch each format preset and capture once. The pasted output should match the selected preset.
 - Switch each prompt template and capture once. The pasted output should include the selected instruction text.
 - Run `python install.py --doctor`. It should show PASS/FAIL rows for dependency, clipboard, host launch, manifest, and browser registration checks.
+- Open Settings from the popup, change defaults, reopen the popup, and verify the controls keep the saved values.
 - Re-run `python install.py`. It should complete cleanly without manual JSON or registry edits.

@@ -59,6 +59,7 @@ Using localhost avoids Chrome's file URL extension restrictions.
 15. Switch between Markdown, Compact, and Prompt formats and capture once per preset.
 16. Switch between Smart, Selection, Clipboard, Page only, Visible text, and Readable text capture modes.
 17. Switch between None, Summarize, Debug, Explain docs, and Notes templates.
+18. Open Settings, change defaults, close and reopen the popup, and verify the saved defaults are applied.
 
 ## Expected Output
 

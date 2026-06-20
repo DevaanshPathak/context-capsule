@@ -18,6 +18,7 @@ const resultMeta = document.querySelector("#result-meta");
 const resultMessage = document.querySelector("#result-message");
 const resultPanel = document.querySelector("#last-result");
 const searchInput = document.querySelector("#search");
+const settingsButton = document.querySelector("#settings");
 const statFallback = document.querySelector("#stat-fallback");
 const statPinned = document.querySelector("#stat-pinned");
 const statTotal = document.querySelector("#stat-total");
@@ -26,6 +27,7 @@ const templateSelect = document.querySelector("#template-id");
 
 let currentEntries = [];
 let currentFilter = "all";
+let historyLimit = DEFAULT_LIMIT;
 let latestUrl = "";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -49,6 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   refreshButton.addEventListener("click", () => {
     refreshPopup().catch(showError);
+  });
+  settingsButton.addEventListener("click", () => {
+    chrome.runtime.openOptionsPage();
   });
   formatSelect.addEventListener("change", () => {
     setFormatMode(formatSelect.value).catch(showError);
@@ -86,6 +91,9 @@ async function initializePopup() {
   }
   if (settings && settings.ok === true && settings.template_id) {
     templateSelect.value = settings.template_id;
+  }
+  if (settings && settings.ok === true && settings.history_limit) {
+    historyLimit = settings.history_limit;
   }
   await refreshPopup();
 }
@@ -161,7 +169,7 @@ async function loadHistory() {
   setStatus("Loading history...");
   const response = await sendToBackground({
     action: "history",
-    limit: DEFAULT_LIMIT
+    limit: historyLimit
   });
 
   if (!response || response.ok !== true) {

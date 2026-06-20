@@ -1,8 +1,11 @@
 const HOST_NAME = "com.context_capsule.host";
 const CAPTURE_MODE_KEY = "captureMode";
+const AUTO_PIN_FALLBACK_KEY = "autoPinFallback";
 const LAST_STATUS_KEY = "lastCaptureStatus";
 const FORMAT_MODE_KEY = "formatMode";
+const HISTORY_LIMIT_KEY = "historyLimit";
 const TEMPLATE_ID_KEY = "templateId";
+const TIMESTAMP_STYLE_KEY = "timestampStyle";
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === "capture-context") {
@@ -53,7 +56,10 @@ async function handlePopupMessage(payload) {
       ok: true,
       format_mode: await getStoredFormatMode(),
       capture_mode: await getStoredCaptureMode(),
-      template_id: await getStoredTemplateId()
+      template_id: await getStoredTemplateId(),
+      history_limit: await getStoredHistoryLimit(),
+      timestamp_style: await getStoredTimestampStyle(),
+      auto_pin_fallback: await getStoredAutoPinFallback()
     };
   }
 
@@ -93,6 +99,8 @@ async function captureActiveTab(options = {}) {
   const formatMode = normalizeFormatMode(options.formatMode || (await getStoredFormatMode()));
   const captureMode = normalizeCaptureMode(options.captureMode || (await getStoredCaptureMode()));
   const templateId = normalizeTemplateId(options.templateId || (await getStoredTemplateId()));
+  const timestampStyle = normalizeTimestampStyle(await getStoredTimestampStyle());
+  const autoPinFallback = await getStoredAutoPinFallback();
   await setStoredFormatMode(formatMode);
   await setStoredCaptureMode(captureMode);
   await setStoredTemplateId(templateId);
@@ -110,6 +118,8 @@ async function captureActiveTab(options = {}) {
       format_mode: formatMode,
       capture_mode: captureMode,
       template_id: templateId,
+      timestamp_style: timestampStyle,
+      auto_pin_fallback: autoPinFallback,
       append_to_capsule: Boolean(options.appendToCapsule)
     }
   });
@@ -129,6 +139,7 @@ async function captureActiveTab(options = {}) {
     format_mode: response.format_mode || formatMode,
     capture_mode: response.capture_mode || captureMode,
     template_id: response.template_id || templateId,
+    timestamp_style: response.timestamp_style || timestampStyle,
     message: captureStatusMessage(response.capture_mode || captureMode, Boolean(response.fallback_used)),
     timestamp: new Date().toISOString()
   };
@@ -260,6 +271,30 @@ function getStoredTemplateId() {
   });
 }
 
+function getStoredHistoryLimit() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([HISTORY_LIMIT_KEY], (items) => {
+      resolve(normalizeHistoryLimit(items[HISTORY_LIMIT_KEY]));
+    });
+  });
+}
+
+function getStoredTimestampStyle() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([TIMESTAMP_STYLE_KEY], (items) => {
+      resolve(normalizeTimestampStyle(items[TIMESTAMP_STYLE_KEY]));
+    });
+  });
+}
+
+function getStoredAutoPinFallback() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([AUTO_PIN_FALLBACK_KEY], (items) => {
+      resolve(Boolean(items[AUTO_PIN_FALLBACK_KEY]));
+    });
+  });
+}
+
 function setStoredFormatMode(formatMode) {
   return new Promise((resolve) => {
     chrome.storage.local.set({ [FORMAT_MODE_KEY]: normalizeFormatMode(formatMode) }, () => resolve());
@@ -291,6 +326,19 @@ function normalizeCaptureMode(captureMode) {
 function normalizeTemplateId(templateId) {
   const candidate = String(templateId || "none").toLowerCase();
   return ["none", "summarize", "debug", "explain", "notes"].includes(candidate) ? candidate : "none";
+}
+
+function normalizeTimestampStyle(timestampStyle) {
+  const candidate = String(timestampStyle || "local").toLowerCase();
+  return ["local", "iso", "date"].includes(candidate) ? candidate : "local";
+}
+
+function normalizeHistoryLimit(historyLimit) {
+  const parsed = Number.parseInt(historyLimit, 10);
+  if (!Number.isFinite(parsed)) {
+    return 20;
+  }
+  return Math.max(5, Math.min(100, parsed));
 }
 
 function normalizePageContext(response) {

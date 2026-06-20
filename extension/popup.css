@@ -61,6 +61,11 @@ h2 {
   line-height: 1.35;
 }
 
+.header-actions {
+  display: flex;
+  gap: 6px;
+}
+
 button,
 select,
 input {

@@ -23,6 +23,7 @@ class CaptureEntry:
     format_mode: str = "markdown"
     capture_mode: str = "smart"
     template_id: str = "none"
+    timestamp_style: str = "local"
 
 
 def default_db_path() -> Path:
@@ -49,6 +50,7 @@ def init_db(db_path: Optional[Path] = None) -> None:
                 format_mode TEXT NOT NULL DEFAULT 'markdown',
                 capture_mode TEXT NOT NULL DEFAULT 'smart',
                 template_id TEXT NOT NULL DEFAULT 'none',
+                timestamp_style TEXT NOT NULL DEFAULT 'local',
                 pinned INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
@@ -57,6 +59,7 @@ def init_db(db_path: Optional[Path] = None) -> None:
         _ensure_column(connection, "captures", "format_mode", "TEXT NOT NULL DEFAULT 'markdown'")
         _ensure_column(connection, "captures", "capture_mode", "TEXT NOT NULL DEFAULT 'smart'")
         _ensure_column(connection, "captures", "template_id", "TEXT NOT NULL DEFAULT 'none'")
+        _ensure_column(connection, "captures", "timestamp_style", "TEXT NOT NULL DEFAULT 'local'")
         _ensure_column(connection, "captures", "pinned", "INTEGER NOT NULL DEFAULT 0")
         connection.execute(
             """
@@ -84,11 +87,13 @@ def init_db(db_path: Optional[Path] = None) -> None:
                 format_mode TEXT NOT NULL DEFAULT 'markdown',
                 capture_mode TEXT NOT NULL DEFAULT 'smart',
                 template_id TEXT NOT NULL DEFAULT 'none',
+                timestamp_style TEXT NOT NULL DEFAULT 'local',
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
         _ensure_column(connection, "capsule_items", "template_id", "TEXT NOT NULL DEFAULT 'none'")
+        _ensure_column(connection, "capsule_items", "timestamp_style", "TEXT NOT NULL DEFAULT 'local'")
 
 
 def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
@@ -97,8 +102,8 @@ def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
     with _connect(path) as connection:
         cursor = connection.execute(
             """
-            INSERT INTO captures (url, title, content, markdown, captured_at, fallback_used, format_mode, capture_mode, template_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO captures (url, title, content, markdown, captured_at, fallback_used, format_mode, capture_mode, template_id, timestamp_style)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 entry.url,
@@ -110,6 +115,7 @@ def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
                 entry.format_mode,
                 entry.capture_mode,
                 entry.template_id,
+                entry.timestamp_style,
             ),
         )
         _prune_history(connection, MAX_HISTORY_ENTRIES)
@@ -123,7 +129,7 @@ def list_entries(limit: int = DEFAULT_HISTORY_LIMIT, db_path: Optional[Path] = N
     with _connect(path) as connection:
         rows = connection.execute(
             """
-            SELECT id, url, title, content, captured_at, fallback_used, pinned, format_mode, capture_mode, template_id
+            SELECT id, url, title, content, captured_at, fallback_used, pinned, format_mode, capture_mode, template_id, timestamp_style
             FROM captures
             ORDER BY pinned DESC, id DESC
             LIMIT ?
@@ -177,7 +183,7 @@ def get_entry(entry_id: int, db_path: Optional[Path] = None) -> Optional[Dict[st
     with _connect(path) as connection:
         row = connection.execute(
             """
-            SELECT id, url, title, content, markdown, captured_at, fallback_used, pinned, format_mode, capture_mode, template_id
+            SELECT id, url, title, content, markdown, captured_at, fallback_used, pinned, format_mode, capture_mode, template_id, timestamp_style
             FROM captures
             WHERE id = ?
             """,
@@ -259,9 +265,9 @@ def append_entry_to_active_capsule(
             """
             INSERT INTO capsule_items (
                 capsule_id, capture_id, position, url, title, content, markdown,
-                captured_at, format_mode, capture_mode, template_id
+                captured_at, format_mode, capture_mode, template_id, timestamp_style
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 capsule_id,
@@ -275,6 +281,7 @@ def append_entry_to_active_capsule(
                 entry.format_mode,
                 entry.capture_mode,
                 entry.template_id,
+                entry.timestamp_style,
             ),
         )
         connection.execute(
@@ -298,6 +305,7 @@ def append_existing_capture_to_active_capsule(entry_id: int, db_path: Optional[P
         format_mode=str(entry["format_mode"]),
         capture_mode=str(entry["capture_mode"]),
         template_id=str(entry.get("template_id") or "none"),
+        timestamp_style=str(entry.get("timestamp_style") or "local"),
     )
     return append_entry_to_active_capsule(entry_id, capture_entry, db_path)
 
@@ -319,7 +327,7 @@ def get_capsule(capsule_id: int, db_path: Optional[Path] = None) -> Optional[Dic
         items = connection.execute(
             """
             SELECT id, capture_id, position, url, title, content, markdown,
-                   captured_at, format_mode, capture_mode, template_id
+                   captured_at, format_mode, capture_mode, template_id, timestamp_style
             FROM capsule_items
             WHERE capsule_id = ?
             ORDER BY position ASC, id ASC
@@ -406,6 +414,7 @@ def _history_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         "format_mode": _row_text(row, "format_mode", "markdown"),
         "capture_mode": _row_text(row, "capture_mode", "smart"),
         "template_id": _row_text(row, "template_id", "none"),
+        "timestamp_style": _row_text(row, "timestamp_style", "local"),
         "preview": _preview(content),
     }
 
@@ -444,6 +453,7 @@ def _capsule_item_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         "format_mode": str(row["format_mode"] or "markdown"),
         "capture_mode": str(row["capture_mode"] or "smart"),
         "template_id": str(row["template_id"] or "none"),
+        "timestamp_style": str(row["timestamp_style"] or "local"),
     }
 
 

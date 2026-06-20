@@ -17,6 +17,7 @@ Context Capsule is intentionally split so the browser extension stays thin and t
 ## Boundaries
 
 - `extension/` contains browser-only code: active tab lookup, selection collection, popup UI, and native host calls.
+- The extension options page stores user defaults in `chrome.storage.local` and sends concrete values with each capture.
 - `host/` contains core logic: protocol loop, formatting, clipboard access, and SQLite storage.
 - `install.py` is the only place with OS-specific native host registration logic.
 - `demo.html` is a local manual test page and is not required at runtime.
