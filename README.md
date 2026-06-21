@@ -1,6 +1,6 @@
 # Context Capsule
 
-Context Capsule cuts the "share what I'm looking at with an AI" routine from a 5-6 step manual dance down to a single hotkey.
+Context Capsule cuts the "share what I'm looking at with an AI" routine from a 5-6 step manual dance down to one popup click.
 
 When you're debugging, researching, or working with an AI assistant, you constantly need to hand it context: which page you were on, what part of it matters, plus whatever you'd already copied. Right now that means selecting text, copying it, switching to your chat window, pasting it, going back to grab the URL, and then cleaning everything into a readable shape. If you accidentally copy something else before you paste, the original context is gone and you have to redo the whole thing.
 
@@ -14,7 +14,7 @@ The Chromium extension includes branded toolbar icons in the standard 16, 32, 48
 
 ## Quality-of-Life Improvements
 
-- One hotkey replaces the entire copy -> switch -> format -> paste routine. Capture happens instantly without leaving the page.
+- One popup button replaces the entire copy -> switch -> format -> paste routine. Capture happens without leaving the page.
 - Automatic clean formatting. Every capture comes out as a consistent markdown block with source link, title, and timestamp.
 - A local history survives clipboard overwrites. If you copy something else before pasting, the capture is still one click from being back on your clipboard.
 - Popup capture, visible status, and an install doctor make the demo path less fragile.
@@ -32,7 +32,7 @@ Before:
 
 After:
 
-Press `Ctrl+Shift+C` on the page and paste this:
+Click the extension icon, click `Capture Current Page`, and paste this:
 
 ```markdown
 > Source: [Page Title](https://example.com/page)
@@ -44,6 +44,8 @@ Selected text or clipboard fallback, verbatim.
 ## Install
 
 Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and Brave. Firefox is intentionally out of scope, but all browser-extension code is isolated in `extension/`.
+
+For release installs, use the OS-specific guide in [`docs/install.md`](docs/install.md).
 
 1. Install Python dependencies:
 
@@ -76,19 +78,18 @@ Context Capsule targets Chromium-based browsers only for now: Chrome, Edge, and 
 
 5. Use it:
 
-   - `Ctrl+Shift+C` captures the active page context.
-   - `Ctrl+Shift+H` opens history.
    - Clicking the toolbar icon opens the popup dashboard.
-   - The popup can capture the current page, switch capture modes, apply prompt templates, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
+   - `Capture Current Page` captures the active page context.
+   - The popup can switch capture modes, apply prompt templates, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
    - The popup can also collect multiple captures into an active capsule and copy them as one combined markdown prompt.
    - Open Settings from the popup to change defaults for capture mode, format, template, history limit, timestamp style, and fallback auto-pin.
    - Project and tag labels can be attached to captures and used to filter history.
    - Visible history, all history, or the active capsule can be exported to the clipboard as Markdown or JSON.
    - The popup includes a diagnostics viewer for recent host events and errors.
-   - First-run onboarding gives hotkeys, doctor command, and demo page access.
+   - First-run onboarding gives the capture button, doctor command, and demo page access.
    - A Demo Prompt button copies a polished example prompt from the active capsule or recent history.
 
-On macOS, use `Command+Shift+C` and `Command+Shift+H`.
+Captures start from the popup only, so Chromium's built-in browser controls stay untouched.
 
 ### Linux Clipboard Note
 
@@ -190,7 +191,7 @@ The host stores a capped local diagnostics log for recent captures, exports, cap
 
 ## Onboarding
 
-The popup shows a first-run Quick Start card until dismissed. It links to the localhost demo page and reminds users about the capture/history hotkeys and doctor command.
+The popup shows a first-run Quick Start card until dismissed. It links to the localhost demo page and points users to the capture button and doctor command.
 
 ## Demo Prompt
 
@@ -208,10 +209,10 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 
 ## Manual Test Checklist
 
-- Select text on a normal webpage, press `Ctrl+Shift+C`, then paste somewhere. The clipboard should contain a markdown block with the page title, URL, timestamp, and selected text.
-- Click into a page with no selected text, copy some fallback text manually, press `Ctrl+Shift+C`, then paste. The markdown body should contain the previous clipboard text.
-- Press `Ctrl+Shift+H` or click the toolbar icon. The popup should show last capture status, summary counts, search/filter controls, and recent captures.
-- Click "Capture Current Page" in the popup. It should perform the same capture as the hotkey.
+- Select text on a normal webpage, click the toolbar icon, click `Capture Current Page`, then paste somewhere. The clipboard should contain a markdown block with the page title, URL, timestamp, and selected text.
+- Click into a page with no selected text, copy some fallback text manually, click `Capture Current Page`, then paste. The markdown body should contain the previous clipboard text.
+- Reopen the toolbar popup. It should show last capture status, summary counts, search/filter controls, and recent captures.
+- Click `Capture Current Page` again from the popup. It should run the same capture flow.
 - Switch each capture mode and capture once. The pasted output should match the selected mode.
 - Click an older popup entry, then paste. That older markdown block should be copied back to the clipboard.
 - Search history, filter pinned/fallback captures, and open a saved source URL from the popup.

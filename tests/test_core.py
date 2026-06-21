@@ -7,25 +7,25 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
+# Add the host folder to Python's import path so tests can import local modules
 ROOT = Path(__file__).resolve().parents[1]
 HOST = ROOT / "host"
 sys.path.insert(0, str(HOST))
-
+# Test suite for the context capsule native host and formatter behavior
 import context_capsule_host as host  # noqa: E402
 from formatter import build_markdown, format_timestamp  # noqa: E402
 
 
 class ContextCapsuleTest(unittest.TestCase):
-    def setUp(self) -> None:
+    def setUp(self) -> None: # Replace real clipboard reads/writes with safe test doubles
         self.temp_dir = tempfile.TemporaryDirectory()
         os.environ["CONTEXT_CAPSULE_DB"] = str(Path(self.temp_dir.name) / "history.sqlite3")
-        self.writes: list[str] = []
+        self.writes: list[str] = [] # Restore clipboard functions and clean up temp files after each test
         self.original_read = host.clipboard.read_text
         self.original_write = host.clipboard.write_text
         host.clipboard.read_text = lambda: "clipboard text"
         host.clipboard.write_text = self.writes.append
-
+    # Verify markdown, compact, template formatting, and timestamp styles
     def tearDown(self) -> None:
         host.clipboard.read_text = self.original_read
         host.clipboard.write_text = self.original_write
@@ -47,14 +47,14 @@ class ContextCapsuleTest(unittest.TestCase):
             "debug",
         )
         self.assertTrue(templated.startswith("Use this captured context"))
-        self.assertEqual(format_timestamp("2026-06-20T09:02:00Z", "date"), "2026-06-20")
+        self.assertEqual(format_timestamp("2026-06-20T09:02:00Z", "date"), "2026-06-20") # Verify Chrome native messaging length prefixed framing works correctly
 
     def test_native_messaging_framing(self) -> None:
         stream = io.BytesIO()
         host.write_message({"ok": True, "value": "framed"}, stream)
         stream.seek(0)
         self.assertEqual(host.read_message(stream), {"ok": True, "value": "framed"})
-
+    # Verify smart capture falls back to clipboard text and auto pins fallback captures
     def test_capture_modes_and_fallback_pin(self) -> None:
         response = host.handle_message(
             {
@@ -79,7 +79,7 @@ class ContextCapsuleTest(unittest.TestCase):
 
     def test_capsule_export_and_demo_prompt(self) -> None:
         started = host.handle_message({"action": "capsule_start", "project": "Research", "tag": "docs"})
-        self.assertTrue(started["ok"])
+        self.assertTrue(started["ok"]) # Verify capsule creation, append, export, and demo prompt behaviour
 
         capture = host.handle_message(
             {
@@ -117,7 +117,7 @@ class ContextCapsuleTest(unittest.TestCase):
                 },
             }
         )
-        diagnostics = host.handle_message({"action": "diagnostics", "limit": 5})["entries"]
+        diagnostics = host.handle_message({"action": "diagnostics", "limit": 5})["entries"] # Verify capture activity is written to diagnostics history
         self.assertGreaterEqual(len(diagnostics), 1)
         self.assertEqual(diagnostics[0]["message"], "capture")
 

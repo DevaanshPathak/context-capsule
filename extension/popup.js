@@ -1,6 +1,6 @@
-const DEFAULT_LIMIT = 20;
+const DEFAULT_LIMIT = 20; // Default number of history shown in the popup
 
-const captureButton = document.querySelector("#capture");
+const captureButton = document.querySelector("#capture"); // Cache pop up UI elements used throughout the script
 const captureModeSelect = document.querySelector("#capture-mode");
 const capsuleAppendButton = document.querySelector("#capsule-append");
 const capsuleClearButton = document.querySelector("#capsule-clear");
@@ -36,14 +36,14 @@ const statPinned = document.querySelector("#stat-pinned");
 const statTotal = document.querySelector("#stat-total");
 const statusText = document.querySelector("#status");
 const tagInput = document.querySelector("#tag");
-const templateSelect = document.querySelector("#template-id");
+const templateSelect = document.querySelector("#template-id"); // Track current popup state for history, filters and latest source URL
 
 let currentEntries = [];
 let currentFilter = "all";
 let historyLimit = DEFAULT_LIMIT;
 let latestUrl = "";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => { // Attach popup event listeners after the DOM is ready
   captureButton.addEventListener("click", () => {
     captureCurrentPage().catch(showError);
   });
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initializePopup().catch(showError);
 });
 
-async function initializePopup() {
+async function initializePopup() { // Initialize popup settings, onboarding state and captured history
   await loadOnboarding();
   const settings = await sendToBackground({ action: "get-settings" });
   if (settings && settings.ok === true && settings.format_mode) {
@@ -146,11 +146,11 @@ async function dismissOnboarding() {
   onboardingCard.hidden = true;
 }
 
-async function refreshPopup() {
+async function refreshPopup() { // Reload all popup data from the background/native host
   await Promise.all([loadLastStatus(), loadSummary(), loadCapsuleStatus(), loadHistory(), loadDiagnostics()]);
 }
 
-async function captureCurrentPage() {
+async function captureCurrentPage() { // Capture the current active page with selected popup options
   setBusy(true);
   setStatus("Capturing active page...");
   try {
@@ -171,7 +171,7 @@ async function captureCurrentPage() {
   }
 }
 
-async function appendCurrentPageToCapsule() {
+async function appendCurrentPageToCapsule() { // Capture the active page and append it to the active capsule
   setBusy(true);
   setStatus("Appending current page...");
   try {
@@ -217,7 +217,7 @@ async function loadSummary() {
   renderSummary(response.summary || {});
 }
 
-async function loadHistory() {
+async function loadHistory() { // Load saved capture history and render it in the popup
   setStatus("Loading history...");
   const response = await sendToBackground({
     action: "history",
@@ -241,7 +241,7 @@ async function loadDiagnostics() {
   renderDiagnostics(response.entries || []);
 }
 
-function renderSummary(summary) {
+function renderSummary(summary) { // Update dashboard stats and latest source link
   statTotal.textContent = String(summary.total || 0);
   statPinned.textContent = String(summary.pinned || 0);
   statFallback.textContent = String(summary.fallback_used || 0);
@@ -255,7 +255,7 @@ function renderSummary(summary) {
   }
 }
 
-function renderLastStatus(status) {
+function renderLastStatus(status) { // Render the latest capture result or error message
   resultPanel.classList.toggle("error", Boolean(status && status.ok === false));
 
   if (!status) {
@@ -268,7 +268,7 @@ function renderLastStatus(status) {
   resultMeta.textContent = statusMeta(status);
 }
 
-function renderCapsule(capsule) {
+function renderCapsule(capsule) { // Update active capsule status and enable/disable capsule actions
   if (!capsule) {
     capsuleStatus.textContent = "No active capsule.";
     capsuleCopyButton.disabled = true;
@@ -284,7 +284,7 @@ function renderCapsule(capsule) {
   capsuleClearButton.disabled = false;
 }
 
-function renderHistory(entries) {
+function renderHistory(entries) { // Render filtered history entries with copy/open/pin/delete actions
   historyList.replaceChildren();
   const visibleEntries = filterEntries(entries);
 
@@ -330,7 +330,7 @@ function renderHistory(entries) {
   }
 }
 
-function renderDiagnostics(entries) {
+function renderDiagnostics(entries) { // Render recent diagnostic messages from the native host
   diagnosticsList.replaceChildren();
   if (!entries.length) {
     const item = document.createElement("li");
@@ -351,7 +351,7 @@ function renderDiagnostics(entries) {
   }
 }
 
-function filterEntries(entries) {
+function filterEntries(entries) { // Apply search, label, pinned and fallback filters to the history entries
   const query = searchInput.value.trim().toLowerCase();
   const labelQuery = labelFilterInput.value.trim().toLowerCase();
   return entries.filter((entry) => {
@@ -379,7 +379,7 @@ function matchesLabelFilter(entry, labelQuery) {
   return [entry.project, entry.tag].join(" ").toLowerCase().includes(labelQuery);
 }
 
-async function recopyEntry(entryId) {
+async function recopyEntry(entryId) { // Copy a saved history entry back to the clipboard
   const response = await sendToBackground({
     action: "recopy",
     id: entryId
@@ -393,7 +393,7 @@ async function recopyEntry(entryId) {
   setStatus("Copied history entry.");
 }
 
-async function startCapsule() {
+async function startCapsule() { // Start a new capsule using current project/tag values
   const response = await sendToBackground({
     action: "capsule_start",
     project: projectInput.value,
@@ -424,7 +424,7 @@ async function clearCapsule() {
   setStatus(`Cleared ${response.deleted || 0} capsule items.`);
 }
 
-async function pinEntry(entryId, pinned) {
+async function pinEntry(entryId, pinned) { // Pin or unpin a saved capture entry
   const response = await sendToBackground({
     action: "pin",
     id: entryId,
@@ -451,7 +451,7 @@ async function deleteEntry(entryId) {
   await Promise.all([loadSummary(), loadHistory()]);
 }
 
-async function clearHistory() {
+async function clearHistory() { // Clear all saved captures after user confirmation
   if (!window.confirm("Clear all saved captures?")) {
     return;
   }
@@ -467,7 +467,7 @@ async function clearHistory() {
   setStatus(`Cleared ${response.deleted || 0} captures.`);
 }
 
-async function exportCaptures(target) {
+async function exportCaptures(target) { // Export captures based on the selected target and format
   const response = await sendToBackground({
     action: "export",
     target,
@@ -480,7 +480,7 @@ async function exportCaptures(target) {
   setStatus(`Exported ${response.count || 0} item${response.count === 1 ? "" : "s"} as ${response.format}.`);
 }
 
-async function copyDemoPrompt() {
+async function copyDemoPrompt() { // Copy a demo prompt generated from saved captures
   const response = await sendToBackground({ action: "demo_prompt" });
   if (!response || response.ok !== true) {
     throw new Error(response && response.error ? response.error : "Could not copy demo prompt.");
@@ -489,7 +489,7 @@ async function copyDemoPrompt() {
   await loadDiagnostics();
 }
 
-async function setFormatMode(formatMode) {
+async function setFormatMode(formatMode) { // Save the selected output format mode
   const response = await sendToBackground({
     action: "set-format-mode",
     format_mode: formatMode
@@ -499,7 +499,7 @@ async function setFormatMode(formatMode) {
   }
 }
 
-async function setCaptureMode(captureMode) {
+async function setCaptureMode(captureMode) { // Save the selected capture mode
   const response = await sendToBackground({
     action: "set-capture-mode",
     capture_mode: captureMode
@@ -509,7 +509,7 @@ async function setCaptureMode(captureMode) {
   }
 }
 
-async function setTemplateId(templateId) {
+async function setTemplateId(templateId) { // Save the selected template preset
   const response = await sendToBackground({
     action: "set-template-id",
     template_id: templateId
@@ -519,7 +519,7 @@ async function setTemplateId(templateId) {
   }
 }
 
-function sendToBackground(payload) {
+function sendToBackground(payload) { // Send popup actions to the background script
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ source: "context-capsule-popup", payload }, (response) => {
       const error = chrome.runtime.lastError;
@@ -544,7 +544,7 @@ function chromeStorageSet(values) {
   });
 }
 
-function actionButton(label, onClick) {
+function actionButton(label, onClick) { // Create an action button that safely handles async errors
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = label;
@@ -576,7 +576,7 @@ function textNode(tagName, className, value) {
   return element;
 }
 
-function entryMeta(entry) {
+function entryMeta(entry) { // Build metadata text shown under each history entry
   const parts = [entry.captured_at || "Unknown time", entry.capture_mode || "smart", entry.format_mode || "markdown"];
   if (entry.template_id && entry.template_id !== "none") {
     parts.push(entry.template_id);
@@ -593,7 +593,7 @@ function entryMeta(entry) {
   return parts.join(" - ");
 }
 
-function statusMeta(status) {
+function statusMeta(status) { // Build metadata text for the latest capture status panel
   const parts = [];
   if (status.captured_at) {
     parts.push(status.captured_at);
@@ -634,12 +634,12 @@ function setStatus(message) {
   statusText.textContent = message;
 }
 
-function setBusy(isBusy) {
+function setBusy(isBusy) { // Disable capture actions while a capture is running
   captureButton.disabled = isBusy;
   capsuleAppendButton.disabled = isBusy;
 }
 
-function showError(error) {
+function showError(error) { // Show results in the result panel and status bar
   console.error(error);
   renderLastStatus({
     ok: false,

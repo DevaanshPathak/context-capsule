@@ -1,4 +1,4 @@
-const HOST_NAME = "com.context_capsule.host";
+const HOST_NAME = "com.context_capsule.host"; // Native host name and Chrome storage keys used by Context Capsule
 const CAPTURE_MODE_KEY = "captureMode";
 const AUTO_PIN_FALLBACK_KEY = "autoPinFallback";
 const LAST_STATUS_KEY = "lastCaptureStatus";
@@ -7,22 +7,12 @@ const HISTORY_LIMIT_KEY = "historyLimit";
 const TEMPLATE_ID_KEY = "templateId";
 const TIMESTAMP_STYLE_KEY = "timestampStyle";
 
-chrome.commands.onCommand.addListener((command) => {
-  if (command === "capture-context") {
-    captureActiveTab().catch((error) => {
-      console.error("Context Capsule capture failed:", error);
-      saveLastStatus(failureStatus(error)).catch(() => {});
-      flashBadge("!", "#b3261e");
-    });
-  }
-});
-
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (!message || message.source !== "context-capsule-popup") {
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => { // Handle messages coming from the extension popup
+  if (!message || message.source !== "context-capsule-popup") { // Ignore messages which are not from the extension popup
     return false;
   }
 
-  handlePopupMessage(message.payload)
+  handlePopupMessage(message.payload) // Process popup requests asynchronously and reply using sendResponse
     .then((response) => sendResponse(response))
     .catch((error) => {
       const status = failureStatus(error);
@@ -31,10 +21,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     });
 
   return true;
-});
+}); // Keep the message channel open for async response
 
-async function handlePopupMessage(payload) {
-  if (!payload || typeof payload !== "object") {
+async function handlePopupMessage(payload) { // Route popup actions to correct capture, settings or native host operation
+  if (!payload || typeof payload !== "object") { // Validate popup payload before reading action fields
     return { ok: false, error: "Invalid popup request." };
   }
 
@@ -44,7 +34,7 @@ async function handlePopupMessage(payload) {
       captureMode: payload.capture_mode,
       templateId: payload.template_id,
       project: payload.project,
-      tag: payload.tag,
+      tag: payload.tag, // Start an action using the options selected in popup
       appendToCapsule: Boolean(payload.append_to_capsule)
     });
   }
@@ -57,11 +47,11 @@ async function handlePopupMessage(payload) {
     return {
       ok: true,
       format_mode: await getStoredFormatMode(),
-      capture_mode: await getStoredCaptureMode(),
+      capture_mode: await getStoredCaptureMode(), // Return the last saved capture status to popup
       template_id: await getStoredTemplateId(),
       history_limit: await getStoredHistoryLimit(),
       timestamp_style: await getStoredTimestampStyle(),
-      auto_pin_fallback: await getStoredAutoPinFallback()
+      auto_pin_fallback: await getStoredAutoPinFallback() // Return all user saved settings to popup
     };
   }
 
@@ -72,12 +62,12 @@ async function handlePopupMessage(payload) {
 
   if (payload.action === "set-capture-mode") {
     await setStoredCaptureMode(payload.capture_mode);
-    return { ok: true, capture_mode: normalizeCaptureMode(payload.capture_mode) };
+    return { ok: true, capture_mode: normalizeCaptureMode(payload.capture_mode) }; // Update the saved output format mode
   }
 
   if (payload.action === "set-template-id") {
     await setStoredTemplateId(payload.template_id);
-    return { ok: true, template_id: normalizeTemplateId(payload.template_id) };
+    return { ok: true, template_id: normalizeTemplateId(payload.template_id) }; // Update the saved capture mode
   }
 
   const response = await sendToNative(payload);
@@ -87,31 +77,31 @@ async function handlePopupMessage(payload) {
       kind: "recopy",
       message: "Copied history entry back to clipboard.",
       timestamp: new Date().toISOString()
-    });
+    }); // Forward all other popup actions to the native app
   }
-  return response;
+  return response; // If a history item is recopied, update the visible status message
 }
 
-async function captureActiveTab(options = {}) {
-  const [tab] = await queryTabs({ active: true, currentWindow: true });
+async function captureActiveTab(options = {}) { // Capture the active tab, collect page context, send it to native host and update UI status
+  const [tab] = await queryTabs({ active: true, currentWindow: true }); // Find the currently active tab in current chrome window
   if (!tab || typeof tab.id !== "number") {
-    throw new Error("No active tab found.");
+    throw new Error("No active tab found."); // Stop if there is no valid tab to capture
   }
 
   const formatMode = normalizeFormatMode(options.formatMode || (await getStoredFormatMode()));
-  const captureMode = normalizeCaptureMode(options.captureMode || (await getStoredCaptureMode()));
+  const captureMode = normalizeCaptureMode(options.captureMode || (await getStoredCaptureMode())); // Load and normalize capture settings, falling back to saved preferences.
   const templateId = normalizeTemplateId(options.templateId || (await getStoredTemplateId()));
   const timestampStyle = normalizeTimestampStyle(await getStoredTimestampStyle());
   const autoPinFallback = await getStoredAutoPinFallback();
   await setStoredFormatMode(formatMode);
   await setStoredCaptureMode(captureMode);
-  await setStoredTemplateId(templateId);
+  await setStoredTemplateId(templateId); // Persist normalized settings so future capture uses the same values
 
   const pageContext = await getPageContext(tab.id);
   const response = await sendToNative({
     action: "capture",
-    payload: {
-      url: tab.url || "",
+    payload: { // Read selected, visible, and readable text from active page
+      url: tab.url || "", // Send the captured page data to native messaging host
       title: tab.title || "Untitled page",
       selection: pageContext.selection,
       visible_text: pageContext.visibleText,
@@ -134,11 +124,11 @@ async function captureActiveTab(options = {}) {
 
   const status = {
     ok: true,
-    kind: "capture",
+    kind: "capture", // Stop if native app failed to capture the page context
     id: response.id,
     title: response.title || tab.title || "Untitled page",
     url: response.url || tab.url || "",
-    fallback_used: Boolean(response.fallback_used),
+    fallback_used: Boolean(response.fallback_used), // Build the success status object saved for the UI popup
     captured_at: response.captured_at || "",
     format_mode: response.format_mode || formatMode,
     capture_mode: response.capture_mode || captureMode,
@@ -154,7 +144,7 @@ async function captureActiveTab(options = {}) {
   }
   await saveLastStatus(status);
   await flashBadge(response.fallback_used ? "CB" : "OK", "#146c2e");
-  return response;
+  return response; // Show a badge indicating whether normal capture or clipboard fallback was used
 }
 
 async function getSelection(tabId) {
@@ -162,23 +152,23 @@ async function getSelection(tabId) {
   return context.selection;
 }
 
-async function getPageContext(tabId) {
+async function getPageContext(tabId) { // Get page context from the content script, injecting it if needed
   try {
-    const response = await sendTabMessage(tabId, { type: "get-page-context" });
+    const response = await sendTabMessage(tabId, { type: "get-page-context" }); // Try reading page context from an already loaded content script first
     return normalizePageContext(response);
   } catch (_error) {
     try {
-      await executeScript({ target: { tabId }, files: ["content.js"] });
+      await executeScript({ target: { tabId }, files: ["content.js"] }); // If content script is missing, inject and retry
       const response = await sendTabMessage(tabId, { type: "get-page-context" });
       return normalizePageContext(response);
     } catch (error) {
       console.warn("Context Capsule could not read page selection:", error);
-      return normalizePageContext(null);
+      return normalizePageContext(null); // Return empty context if the page cannot be accessed
     }
   }
 }
 
-function queryTabs(queryInfo) {
+function queryTabs(queryInfo) { // Promise wrapper around chrome.tabs.query
   return new Promise((resolve, reject) => {
     chrome.tabs.query(queryInfo, (tabs) => {
       const error = chrome.runtime.lastError;
@@ -191,7 +181,7 @@ function queryTabs(queryInfo) {
   });
 }
 
-function sendTabMessage(tabId, message) {
+function sendTabMessage(tabId, message) { // Promise wrapper around chrome.tabs.sendMessage
   return new Promise((resolve, reject) => {
     chrome.tabs.sendMessage(tabId, message, (response) => {
       const error = chrome.runtime.lastError;
@@ -204,7 +194,7 @@ function sendTabMessage(tabId, message) {
   });
 }
 
-function executeScript(details) {
+function executeScript(details) { // Promise wrapper around chrome.scripting.executeScript
   return new Promise((resolve, reject) => {
     chrome.scripting.executeScript(details, (results) => {
       const error = chrome.runtime.lastError;
@@ -217,17 +207,17 @@ function executeScript(details) {
   });
 }
 
-function sendToNative(message) {
+function sendToNative(message) { // Open a native messaging port and send one request
   return new Promise((resolve, reject) => {
     const port = chrome.runtime.connectNative(HOST_NAME);
     let settled = false;
-
+    // Resolve when the native host sends a response
     port.onMessage.addListener((response) => {
       settled = true;
       resolve(response);
       port.disconnect();
     });
-
+    // Reject if the native host disconnects before sending a response
     port.onDisconnect.addListener(() => {
       const error = chrome.runtime.lastError;
       if (!settled) {
@@ -239,7 +229,7 @@ function sendToNative(message) {
   });
 }
 
-function getLastStatus() {
+function getLastStatus() { // Read the last capture status from Chrome Local Storage
   return new Promise((resolve) => {
     chrome.storage.local.get([LAST_STATUS_KEY], (items) => {
       resolve(items[LAST_STATUS_KEY] || null);
@@ -247,13 +237,13 @@ function getLastStatus() {
   });
 }
 
-function saveLastStatus(status) {
+function saveLastStatus(status) { // Save the latest capture status to Chrome Local Storage
   return new Promise((resolve) => {
     chrome.storage.local.set({ [LAST_STATUS_KEY]: status }, () => resolve());
   });
 }
 
-function getStoredFormatMode() {
+function getStoredFormatMode() { // Load the stored format mode and normalize it
   return new Promise((resolve) => {
     chrome.storage.local.get([FORMAT_MODE_KEY], (items) => {
       resolve(normalizeFormatMode(items[FORMAT_MODE_KEY]));
@@ -261,7 +251,7 @@ function getStoredFormatMode() {
   });
 }
 
-function getStoredCaptureMode() {
+function getStoredCaptureMode() { // Load the stored capture mode and normalize it
   return new Promise((resolve) => {
     chrome.storage.local.get([CAPTURE_MODE_KEY], (items) => {
       resolve(normalizeCaptureMode(items[CAPTURE_MODE_KEY]));
@@ -269,7 +259,7 @@ function getStoredCaptureMode() {
   });
 }
 
-function getStoredTemplateId() {
+function getStoredTemplateId() { // Load the stored template preset and normalize it
   return new Promise((resolve) => {
     chrome.storage.local.get([TEMPLATE_ID_KEY], (items) => {
       resolve(normalizeTemplateId(items[TEMPLATE_ID_KEY]));
@@ -277,7 +267,7 @@ function getStoredTemplateId() {
   });
 }
 
-function getStoredHistoryLimit() {
+function getStoredHistoryLimit() { // Load the stored history limit and clamp it to a safe range
   return new Promise((resolve) => {
     chrome.storage.local.get([HISTORY_LIMIT_KEY], (items) => {
       resolve(normalizeHistoryLimit(items[HISTORY_LIMIT_KEY]));
@@ -285,7 +275,7 @@ function getStoredHistoryLimit() {
   });
 }
 
-function getStoredTimestampStyle() {
+function getStoredTimestampStyle() { // Load the stored timestamp display style and normalize it
   return new Promise((resolve) => {
     chrome.storage.local.get([TIMESTAMP_STYLE_KEY], (items) => {
       resolve(normalizeTimestampStyle(items[TIMESTAMP_STYLE_KEY]));
@@ -301,45 +291,45 @@ function getStoredAutoPinFallback() {
   });
 }
 
-function setStoredFormatMode(formatMode) {
+function setStoredFormatMode(formatMode) { // Save the normalized format mode to Chrome Local Storage
   return new Promise((resolve) => {
     chrome.storage.local.set({ [FORMAT_MODE_KEY]: normalizeFormatMode(formatMode) }, () => resolve());
   });
 }
 
-function setStoredCaptureMode(captureMode) {
+function setStoredCaptureMode(captureMode) { // Save the normalized capture mode to Chrome Local Storage
   return new Promise((resolve) => {
     chrome.storage.local.set({ [CAPTURE_MODE_KEY]: normalizeCaptureMode(captureMode) }, () => resolve());
   });
 }
 
-function setStoredTemplateId(templateId) {
+function setStoredTemplateId(templateId) { // Save the normalized template preset to Chrome Local Storage
   return new Promise((resolve) => {
     chrome.storage.local.set({ [TEMPLATE_ID_KEY]: normalizeTemplateId(templateId) }, () => resolve());
   });
 }
 
-function normalizeFormatMode(formatMode) {
+function normalizeFormatMode(formatMode) { // Accept only supported format modes
   const mode = String(formatMode || "markdown").toLowerCase();
   return ["markdown", "compact", "prompt"].includes(mode) ? mode : "markdown";
 }
 
-function normalizeCaptureMode(captureMode) {
+function normalizeCaptureMode(captureMode) { // Accept only supported capture modes
   const mode = String(captureMode || "smart").toLowerCase();
   return ["smart", "selection", "clipboard", "metadata", "visible", "readable"].includes(mode) ? mode : "smart";
 }
 
-function normalizeTemplateId(templateId) {
+function normalizeTemplateId(templateId) { // Accept only supported template presets
   const candidate = String(templateId || "none").toLowerCase();
   return ["none", "summarize", "debug", "explain", "notes"].includes(candidate) ? candidate : "none";
 }
 
-function normalizeTimestampStyle(timestampStyle) {
+function normalizeTimestampStyle(timestampStyle) { // Accept only supported timestamp display styles
   const candidate = String(timestampStyle || "local").toLowerCase();
   return ["local", "iso", "date"].includes(candidate) ? candidate : "local";
 }
 
-function normalizeHistoryLimit(historyLimit) {
+function normalizeHistoryLimit(historyLimit) { // Convert history limit into a number between 5 and 100
   const parsed = Number.parseInt(historyLimit, 10);
   if (!Number.isFinite(parsed)) {
     return 20;
@@ -347,7 +337,7 @@ function normalizeHistoryLimit(historyLimit) {
   return Math.max(5, Math.min(100, parsed));
 }
 
-function normalizePageContext(response) {
+function normalizePageContext(response) { // Normalize the page context response from content script, ensuring all expected fields are present and of correct type
   return {
     selection: response && typeof response.selection === "string" ? response.selection : "",
     visibleText: response && typeof response.visibleText === "string" ? response.visibleText : "",
@@ -355,7 +345,7 @@ function normalizePageContext(response) {
   };
 }
 
-function captureStatusMessage(captureMode, fallbackUsed) {
+function captureStatusMessage(captureMode, fallbackUsed) {  // Convert capture mode and fallback usage into a user friendly message
   if (fallbackUsed) {
     return "Copied with clipboard fallback.";
   }
@@ -370,7 +360,7 @@ function captureStatusMessage(captureMode, fallbackUsed) {
   return labels[captureMode] || labels.smart;
 }
 
-function failureStatus(error) {
+function failureStatus(error) { // Convert an error into a normalized failure status object
   return {
     ok: false,
     kind: "error",
@@ -379,7 +369,7 @@ function failureStatus(error) {
   };
 }
 
-async function flashBadge(text, color) {
+async function flashBadge(text, color) { // Temporarily show a badge on the extension icon
   await setBadgeBackgroundColor(color);
   await setBadgeText(text);
   setTimeout(() => {
@@ -387,13 +377,13 @@ async function flashBadge(text, color) {
   }, 1400);
 }
 
-function setBadgeText(text) {
+function setBadgeText(text) { // Promise wrapper around chrome.action.setBadgeText
   return new Promise((resolve) => {
     chrome.action.setBadgeText({ text }, () => resolve());
   });
 }
 
-function setBadgeBackgroundColor(color) {
+function setBadgeBackgroundColor(color) { // Promise wrapper around chrome.action.setBadgeBackgroundColor
   return new Promise((resolve) => {
     chrome.action.setBadgeBackgroundColor({ color }, () => resolve());
   });

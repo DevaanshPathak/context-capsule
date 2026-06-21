@@ -50,6 +50,7 @@ def main() -> int:
     init_db()
     while True:
         try:
+            # Chrome keeps the host alive for a port and sends length-prefixed JSON packets over stdin.
             message = read_message(sys.stdin.buffer)
             if message is None:
                 return 0
@@ -64,6 +65,7 @@ def main() -> int:
 
 
 def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
+    # Keep action names stable because the extension popup calls this dispatch table directly.
     action = str(message.get("action") or "capture")
     if action == "capture":
         return capture_context(_dict_value(message.get("payload"), message))
@@ -99,6 +101,7 @@ def handle_message(message: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
+    # The extension is intentionally thin; the host owns mode selection, fallback, formatting, clipboard, and storage.
     selection = str(payload.get("selection") or "")
     capture_mode = normalize_capture_mode(str(payload.get("capture_mode") or "smart"))
     content, fallback_used = _content_for_capture_mode(capture_mode, payload, selection)
@@ -119,6 +122,7 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
         timestamp_style=timestamp_style,
     )
 
+    # Clipboard write happens before history insert so a failed clipboard operation does not create a misleading entry.
     clipboard.write_text(markdown)
     entry = CaptureEntry(
         url=str(payload.get("url") or ""),
@@ -138,6 +142,7 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
     auto_pinned = bool(payload.get("auto_pin_fallback")) and fallback_used
     if auto_pinned:
         set_pinned(entry_id, True)
+    # Capsule append is optional and reuses the same saved capture so history and capsule output stay consistent.
     capsule = append_entry_to_active_capsule(entry_id, entry) if bool(payload.get("append_to_capsule")) else None
     _safe_log("info", "capture", f"{entry.title} | {capture_mode} | {format_mode} | {template_id}")
     return {
@@ -159,6 +164,7 @@ def capture_context(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _content_for_capture_mode(capture_mode: str, payload: Dict[str, Any], selection: str) -> tuple[str, bool]:
+    # Only smart mode uses clipboard fallback automatically; explicit modes should do exactly what they say.
     if capture_mode == "selection":
         return selection, False
     if capture_mode == "clipboard":
@@ -266,6 +272,7 @@ def export_context(message: Dict[str, Any]) -> Dict[str, Any]:
     target = str(message.get("target") or "visible").lower()
     export_format = str(message.get("format") or "markdown").lower()
 
+    # Export writes to the clipboard, matching capture and recopy behavior so the popup has one simple success path.
     if target == "capsule":
         capsule = get_active_capsule()
         if not capsule or not capsule.get("item_count"):
@@ -315,6 +322,7 @@ def demo_prompt() -> Dict[str, Any]:
 
 
 def read_message(stream: BinaryIO) -> Optional[Dict[str, Any]]:
+    # Native Messaging uses a 4-byte little-endian unsigned length before each UTF-8 JSON payload.
     raw_length = stream.read(4)
     if not raw_length:
         return None
@@ -336,6 +344,7 @@ def read_message(stream: BinaryIO) -> Optional[Dict[str, Any]]:
 
 
 def write_message(message: Dict[str, Any], stream: BinaryIO) -> None:
+    # Responses must use the same framing as incoming packets or Chrome will treat the host as broken.
     encoded = json.dumps(message, separators=(",", ":")).encode("utf-8")
     stream.write(struct.pack("<I", len(encoded)))
     stream.write(encoded)
@@ -423,6 +432,7 @@ def _export_json(value: Any) -> str:
 
 
 def _safe_log(level: str, message: str, context: str = "") -> None:
+    # Diagnostics should never break the user-facing action that triggered them.
     try:
         log_diagnostic(level, message, context)
     except Exception:

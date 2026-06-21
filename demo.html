@@ -40,12 +40,84 @@
         line-height: 1.65;
       }
 
+      button {
+        border: 0;
+        border-radius: 6px;
+        background: #315b96;
+        color: #ffffff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 650;
+        padding: 10px 14px;
+      }
+
+      button:focus-visible {
+        outline: 3px solid #7fb2ff;
+        outline-offset: 2px;
+      }
+
       .sample {
         margin-top: 22px;
         padding: 22px;
         border: 1px solid #d7d0c2;
         border-radius: 8px;
         background: #fffdf8;
+      }
+
+      .demo-grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 18px;
+      }
+
+      .demo-panel {
+        border: 1px solid #d7d0c2;
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 18px;
+      }
+
+      .demo-panel h2 {
+        font-size: 18px;
+        margin: 0 0 10px;
+      }
+
+      .demo-panel p {
+        margin: 0 0 12px;
+      }
+
+      pre {
+        background: #17202a;
+        border-radius: 8px;
+        color: #edf6ff;
+        font-size: 13px;
+        line-height: 1.55;
+        margin: 12px 0 0;
+        overflow-x: auto;
+        padding: 14px;
+        white-space: pre-wrap;
+      }
+
+      .sample-actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .hint {
+        color: #52616f;
+        font-size: 14px;
+        margin: 0;
+      }
+
+      .status {
+        color: #315b96;
+        font-size: 14px;
+        font-weight: 650;
+        margin: 8px 0 0;
       }
 
       .checklist {
@@ -69,9 +141,24 @@
         }
 
         .sample,
+        .demo-panel,
         .checklist li {
           border-color: #44413b;
           background: #242526;
+        }
+
+        .hint {
+          color: #b8c2cc;
+        }
+
+        .status {
+          color: #9cc5ff;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .demo-grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
@@ -80,16 +167,44 @@
     <main>
       <header>
         <h1>Context Capsule Demo Page</h1>
-        <p>Select part of the sample paragraph, run the capture hotkey or popup button, then paste into any editor.</p>
+        <p>Select the sample paragraph, click the extension icon, then click Capture Current Page and paste into any editor.</p>
       </header>
 
       <section class="sample">
         <h2>Sample Research Note</h2>
-        <p>
+        <p id="sample-text">
           Native messaging lets a browser extension pass page context to a local process. Context Capsule uses that
           bridge to capture the active page title, URL, selected text, and clipboard fallback, then stores a recoverable
           history entry after copying a clean markdown block.
         </p>
+        <div class="sample-actions">
+          <button type="button" id="select-sample">Select sample text</button>
+          <p class="hint">If unrelated body text appears in the capture, Smart mode used your existing clipboard because no page selection was detected.</p>
+        </div>
+      </section>
+
+      <section class="demo-grid" aria-label="Demo helpers">
+        <article class="demo-panel">
+          <h2>Clipboard Fallback Test</h2>
+          <p>
+            Clear the page selection, copy this fallback phrase, then click Capture Current Page.
+            The pasted block should use the fallback phrase as the body.
+          </p>
+          <button type="button" id="copy-fallback">Copy fallback phrase</button>
+          <p class="status" id="fallback-status" role="status"></p>
+          <pre id="fallback-text">Fallback test: Context Capsule kept this clipboard text even though no page text was selected.</pre>
+        </article>
+
+        <article class="demo-panel">
+          <h2>Expected Markdown Shape</h2>
+          <p>
+            Every successful capture should include source metadata, a timestamp, and the selected or fallback text.
+          </p>
+          <pre>&gt; Source: [Context Capsule Demo Page](http://localhost:8765/demo.html)
+&gt; Captured: 2026-06-20 14:32
+
+Native messaging lets a browser extension pass page context to a local process.</pre>
+        </article>
       </section>
 
       <ul class="checklist">
@@ -98,5 +213,33 @@
         <li>The popup history should show this capture and let you copy, pin, delete, or clear it.</li>
       </ul>
     </main>
+    <script>
+      const sampleButton = document.getElementById("select-sample");
+      const sampleText = document.getElementById("sample-text");
+      const fallbackButton = document.getElementById("copy-fallback");
+      const fallbackText = document.getElementById("fallback-text");
+      const fallbackStatus = document.getElementById("fallback-status");
+
+      sampleButton.addEventListener("click", () => {
+        const range = document.createRange();
+        range.selectNodeContents(sampleText);
+        const selection = window.getSelection();
+        if (!selection) {
+          return;
+        }
+        selection.removeAllRanges();
+        selection.addRange(range);
+        sampleText.focus({ preventScroll: true });
+      });
+
+      fallbackButton.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(fallbackText.textContent.trim());
+          fallbackStatus.textContent = "Fallback phrase copied.";
+        } catch (_error) {
+          fallbackStatus.textContent = "Clipboard permission was blocked. Select and copy the phrase manually.";
+        }
+      });
+    </script>
   </body>
 </html>

@@ -21,14 +21,15 @@ Fixes:
    oaaidckgoilmkbkclbibiibofjdffkjo
    ```
 
-## Hotkey Does Not Fire
+## Popup Button Does Not Capture
 
 Fixes:
 
-1. Open the browser's extension keyboard shortcuts page.
-2. Confirm `Capture page context` is assigned.
-3. Try the popup's `Capture Current Page` button.
-4. Check whether another extension or browser command already owns `Ctrl+Shift+C`.
+1. Open the toolbar popup and click `Capture Current Page`.
+2. Reload the unpacked extension from the browser's extensions page.
+3. Confirm the loaded unpacked extension is `context-capsule/extension`.
+4. Run `python install.py --doctor`.
+5. Test on `http://localhost:8765/demo.html` instead of a browser settings page.
 
 ## Selection Is Empty
 
@@ -78,4 +79,3 @@ Available presets:
 - Prompt
 
 Switch back to Markdown in the popup for the original blockquote format.
-

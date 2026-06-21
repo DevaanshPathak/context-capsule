@@ -4,7 +4,7 @@ Context Capsule is intentionally split so the browser extension stays thin and t
 
 ## Runtime Flow
 
-1. The user presses `Ctrl+Shift+C` or clicks `Capture Current Page` in the popup.
+1. The user clicks `Capture Current Page` in the popup.
 2. `extension/background.js` finds the active tab and asks `extension/content.js` for selection, visible text, and readable page text.
 3. The background service worker opens the Python host with `chrome.runtime.connectNative`.
 4. `host/context_capsule_host.py` receives a length-prefixed JSON message.

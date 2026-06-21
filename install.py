@@ -17,28 +17,28 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
-HOST_NAME = "com.context_capsule.host"
+HOST_NAME = "com.context_capsule.host" # Core paths used to locate the extension, native host script and manifest files
 PROJECT_ROOT = Path(__file__).resolve().parent
 EXTENSION_MANIFEST = PROJECT_ROOT / "extension" / "manifest.json"
 HOST_SCRIPT = PROJECT_ROOT / "host" / "context_capsule_host.py"
 HOST_MANIFEST_DIR = PROJECT_ROOT / "native-hosts"
 HOST_MANIFEST_FILE = f"{HOST_NAME}.json"
 
-
+# Represents a browser target and where its native messaging registration should be written
 @dataclass(frozen=True)
 class BrowserTarget:
     name: str
     manifest_dir: Optional[Path] = None
     registry_subkey: Optional[str] = None
 
-
+# Represents one doctor check result
 @dataclass(frozen=True)
 class DoctorCheck:
     name: str
     ok: bool
     detail: str
 
-
+# Main installer flow: parse args, derive extension ID, install/doctor for current OS
 def main() -> int:
     args = parse_args()
     system = platform.system()
@@ -68,7 +68,7 @@ def main() -> int:
         install_unix(manifest, targets, args.dry_run)
     else:
         raise SystemExit(f"Unsupported OS: {system}")
-
+    # Define CLI options for install, dry-run, browser target, extension ID, and doctor mode.
     print("Done.")
     print(f"Load this unpacked extension folder: {PROJECT_ROOT / 'extension'}")
     return 0
@@ -86,7 +86,7 @@ def parse_args() -> argparse.Namespace:
         "--extension-id",
         help="Override the extension ID. By default it is derived from extension/manifest.json key.",
     )
-    parser.add_argument("--doctor", action="store_true", help="Check native messaging, clipboard, and host setup.")
+    parser.add_argument("--doctor", action="store_true", help="Check native messaging, clipboard, and host setup.") # Derive the Chromium extension ID from the public key in manifest.json
     parser.add_argument("--dry-run", action="store_true", help="Print planned actions without changing files.")
     return parser.parse_args()
 
@@ -96,12 +96,12 @@ def derive_extension_id(manifest_path: Path) -> str:
     public_key = str(manifest.get("key") or "").strip()
     if not public_key:
         raise SystemExit("extension/manifest.json must include a key or --extension-id must be provided.")
-
+    # Validate that the extension ID matches Chromium's 32-characted a-p format
     digest = hashlib.sha256(base64.b64decode(public_key)).hexdigest()[:32]
     return "".join(chr(ord("a") + int(char, 16)) for char in digest)
 
 
-def validate_extension_id(extension_id: str) -> None:
+def validate_extension_id(extension_id: str) -> None: # Build the native messaging host manifest allowed to talk to this extension
     if len(extension_id) != 32 or any(char < "a" or char > "p" for char in extension_id):
         raise SystemExit(f"Invalid Chromium extension ID: {extension_id}")
 
@@ -111,12 +111,12 @@ def native_host_manifest(extension_id: str, launcher_path: Path) -> Dict[str, An
         "name": HOST_NAME,
         "description": "Context Capsule native messaging host",
         "path": str(launcher_path),
-        "type": "stdio",
+        "type": "stdio", # Choose the platform specific launcher script path
         "allowed_origins": [f"chrome-extension://{extension_id}/"],
     }
 
 
-def launcher_for(system: str) -> Path:
+def launcher_for(system: str) -> Path: # Create the launcher script that starts the Python native host
     suffix = ".cmd" if system == "Windows" else ""
     return PROJECT_ROOT / "bin" / f"context_capsule_host{suffix}"
 
@@ -131,13 +131,13 @@ def write_launcher(system: str, launcher_path: Path) -> None:
     write_text_if_changed(launcher_path, content)
     if system != "Windows":
         chmod_executable(launcher_path)
-        chmod_executable(HOST_SCRIPT)
+        chmod_executable(HOST_SCRIPT) # Select one browser target or all supported Chromium browsers
 
 
 def selected_targets(system: str, browser: str) -> List[BrowserTarget]:
     targets = browser_targets(system)
     if browser == "all":
-        return list(targets.values())
+        return list(targets.values()) # Return OS specific browser native messaging registration locations
     return [targets[browser]]
 
 
@@ -197,7 +197,7 @@ def browser_targets(system: str) -> Dict[str, BrowserTarget]:
 def install_windows(manifest: Dict[str, Any], targets: Iterable[BrowserTarget], dry_run: bool) -> None:
     manifest_path = HOST_MANIFEST_DIR / HOST_MANIFEST_FILE
     if dry_run:
-        print(f"Would write host manifest: {manifest_path}")
+        print(f"Would write host manifest: {manifest_path}") # Install the native host manifest and registry entries on Windows
     else:
         HOST_MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
         write_json_if_changed(manifest_path, manifest)
@@ -216,7 +216,7 @@ def install_unix(manifest: Dict[str, Any], targets: Iterable[BrowserTarget], dry
     for target in targets:
         if not target.manifest_dir:
             continue
-        manifest_path = target.manifest_dir / HOST_MANIFEST_FILE
+        manifest_path = target.manifest_dir / HOST_MANIFEST_FILE # Install the native host manifest on macOS and Linux
         if dry_run:
             print(f"Would write {target.name} host manifest: {manifest_path}")
             continue
@@ -228,7 +228,7 @@ def install_unix(manifest: Dict[str, Any], targets: Iterable[BrowserTarget], dry
 def run_doctor(system: str, extension_id: str, browser: str) -> int:
     launcher_path = launcher_for(system)
     targets = selected_targets(system, browser)
-    checks: List[DoctorCheck] = [
+    checks: List[DoctorCheck] = [ # Run environment, dependency, launcher and registration diagnostics
         DoctorCheck("Supported OS", system in {"Windows", "Darwin", "Linux"}, system),
         DoctorCheck("Extension ID", True, extension_id),
         DoctorCheck("pyperclip dependency", importlib.util.find_spec("pyperclip") is not None, "required by clipboard.py"),
@@ -265,7 +265,7 @@ def clipboard_doctor_check() -> DoctorCheck:
     token = "context-capsule-doctor"
     original = ""
     try:
-        original = str(pyperclip.paste() or "")
+        original = str(pyperclip.paste() or "") # Verify clipboard read/write access through pyperclip
         pyperclip.copy(token)
         copied = str(pyperclip.paste() or "")
     except Exception as exc:
@@ -289,7 +289,7 @@ def host_launch_check(command: List[str], name: str) -> DoctorCheck:
                 capture_output=True,
                 timeout=5,
                 check=False,
-                env=env,
+                env=env, # Check whether the native host script launches successfully
             )
         except Exception as exc:
             return DoctorCheck(name, False, str(exc))
@@ -313,7 +313,7 @@ def launcher_launch_check(system: str, launcher_path: Path) -> DoctorCheck:
                     shell=True,
                     check=False,
                     env=env,
-                )
+                ) # Check whether the generated launcher starts the native host correctly
             except Exception as exc:
                 return DoctorCheck("Host launcher launch", False, str(exc))
         detail = f"exit {completed.returncode}"
@@ -343,7 +343,7 @@ def windows_registration_checks(extension_id: str, targets: Iterable[BrowserTarg
         if not target.registry_subkey:
             continue
         value, error = get_windows_registry_value(target.registry_subkey)
-        ok = value == str(manifest_path)
+        ok = value == str(manifest_path) # Route registration checks to Windows registry or Unix manifest validation
         detail = value or error or f"expected {manifest_path}"
         checks.append(DoctorCheck(f"{target.name} registry", ok, detail))
     return checks
@@ -368,7 +368,7 @@ def manifest_file_check(path: Path, extension_id: str, label: str = "Native host
 
     ok, detail = validate_native_manifest(data, extension_id)
     return DoctorCheck(label, ok, f"{path}; {detail}")
-
+# Verify that a native host manifest file exists and is valid
 
 def validate_native_manifest(data: Dict[str, Any], extension_id: str) -> Tuple[bool, str]:
     expected_origin = f"chrome-extension://{extension_id}/"
@@ -381,7 +381,7 @@ def validate_native_manifest(data: Dict[str, Any], extension_id: str) -> Tuple[b
 
     path = Path(str(data.get("path") or ""))
     if not path.exists():
-        return False, f"host path missing: {path}"
+        return False, f"host path missing: {path}" # Validate native host manifest fields, allowed extension origin and host path
 
     return True, "valid"
 
@@ -398,7 +398,7 @@ def get_windows_registry_value(subkey: str) -> Tuple[str, str]:
 
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, subkey) as key:
-            value, _value_type = winreg.QueryValueEx(key, "")
+            value, _value_type = winreg.QueryValueEx(key, "") # Write the native host manifest path into the windows registry
             return str(value), ""
     except FileNotFoundError:
         return "", "missing registry key"
@@ -414,12 +414,12 @@ def write_json_if_changed(path: Path, data: Dict[str, Any]) -> None:
 def write_text_if_changed(path: Path, content: str) -> None:
     if path.exists() and path.read_text(encoding="utf-8") == content:
         return
-    path.write_text(content, encoding="utf-8")
+    path.write_text(content, encoding="utf-8") # Write the JSON only when the file content has changed
 
 
 def chmod_executable(path: Path) -> None:
     mode = path.stat().st_mode
-    path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH) # Avoid rewriting files when the existing content is already correct
 
 
 if __name__ == "__main__":

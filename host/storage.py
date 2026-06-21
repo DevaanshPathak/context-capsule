@@ -41,6 +41,7 @@ def init_db(db_path: Optional[Path] = None) -> None:
     path = db_path or default_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     with _connect(path) as connection:
+        # Schema creation is paired with lightweight column checks so existing demo databases migrate in place.
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS captures (
@@ -127,6 +128,7 @@ def insert_entry(entry: CaptureEntry, db_path: Optional[Path] = None) -> int:
     path = db_path or default_db_path()
     init_db(path)
     with _connect(path) as connection:
+        # Store the already-rendered markdown so recopy/export do not depend on future formatter changes.
         cursor = connection.execute(
             """
             INSERT INTO captures (url, title, content, markdown, captured_at, fallback_used, format_mode, capture_mode, template_id, timestamp_style, project, tag)
@@ -185,6 +187,7 @@ def list_entries_for_export(db_path: Optional[Path] = None) -> List[Dict[str, An
 
 
 def get_entries_by_ids(entry_ids: List[int], db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    # Preserve popup order after the SQL lookup, because IN queries do not guarantee caller order.
     ids = [int(entry_id) for entry_id in entry_ids if int(entry_id) > 0]
     if not ids:
         return []
@@ -372,6 +375,7 @@ def append_entry_to_active_capsule(
     capsule = get_active_capsule(path) or start_capsule(db_path=path)
     capsule_id = int(capsule["id"])
     with _connect(path) as connection:
+        # Capsule item positions are append-only within a capsule so combined prompts remain predictable.
         position = int(
             connection.execute(
                 "SELECT COUNT(*) AS count FROM capsule_items WHERE capsule_id = ?",
@@ -500,16 +504,19 @@ def _connect(path: Path) -> sqlite3.Connection:
         connection.rollback()
         raise
     finally:
+        # Closing every connection avoids stale file locks during tests and repeated native host launches on Windows.
         connection.close()
 
 
 def _ensure_column(connection: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    # This small migration helper keeps the hackathon database upgrade path simple and dependency-free.
     columns = {str(row["name"]) for row in connection.execute(f"PRAGMA table_info({table})")}
     if column not in columns:
         connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
 def _prune_history(connection: sqlite3.Connection, max_entries: int) -> None:
+    # Pinned captures are never pruned automatically; only unpinned overflow rows are removed.
     connection.execute(
         """
         DELETE FROM captures
@@ -534,6 +541,7 @@ def _row_text(row: sqlite3.Row, key: str, fallback: str = "") -> str:
 
 def _history_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
     content = str(row["content"] or "")
+    # History rows use a preview instead of full markdown to keep popup payloads small.
     return {
         "id": int(row["id"]),
         "url": str(row["url"] or ""),

@@ -1,5 +1,5 @@
 #define AppName "Context Capsule"
-#define AppVersion "0.1.0"
+#define AppVersion "1.0.0"
 #define HostName "com.context_capsule.host"
 #define ExtensionId "oaaidckgoilmkbkclbibiibofjdffkjo"
 
@@ -60,4 +60,3 @@ begin
     SaveStringToFile(ManifestPath, Json, False);
   end;
 end;
-

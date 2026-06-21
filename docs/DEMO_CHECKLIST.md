@@ -42,15 +42,15 @@ Using localhost avoids Chrome's file URL extension restrictions.
 
 ## Main Demo Script
 
-1. Select part of the sample paragraph on `demo.html`.
-2. Press `Ctrl+Shift+C`.
+1. Click `Select sample text` on `demo.html`, or manually select part of the sample paragraph.
+2. Click the extension icon, then click `Capture Current Page`.
 3. Paste into a text editor or LLM chat.
 4. Confirm the pasted output includes source title, URL, timestamp, and selected text.
 5. Clear the selection.
 6. Copy a short fallback phrase manually.
-7. Press `Ctrl+Shift+C` again.
+7. Click `Capture Current Page` again.
 8. Paste and confirm the fallback phrase appears in the formatted block.
-9. Open the popup with `Ctrl+Shift+H` or the toolbar icon.
+9. Reopen the popup with the toolbar icon.
 10. Confirm the popup shows total, pinned, fallback counts, last status, search, filters, and recent captures.
 11. Re-copy an older entry and paste it.
 12. Search history, filter pinned/fallback captures, and open a saved source URL.
@@ -76,7 +76,7 @@ Selected text from the page.
 
 ## Demo Talking Points
 
-- One hotkey replaces selecting, copying, switching apps, pasting, grabbing the URL, and cleanup.
+- One popup click replaces selecting, copying, switching apps, pasting, grabbing the URL, and cleanup.
 - Clipboard fallback means a capture still works when nothing is selected.
 - Local history means a capture is not lost if the clipboard changes before paste.
 - Capsules collect multiple sources into one AI-ready prompt.
