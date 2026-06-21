@@ -1,4 +1,5 @@
 const DEFAULT_LIMIT = 20; // Default number of history shown in the popup
+const INSTALL_GUIDE_URL = "https://github.com/DevaanshPathak/context-capsule/blob/main/docs/install.md";
 
 const captureButton = document.querySelector("#capture"); // Cache pop up UI elements used throughout the script
 const captureModeSelect = document.querySelector("#capture-mode");
@@ -17,7 +18,9 @@ const formatSelect = document.querySelector("#format-mode");
 const diagnosticsList = document.querySelector("#diagnostics");
 const dismissOnboardingButton = document.querySelector("#dismiss-onboarding");
 const demoPromptButton = document.querySelector("#demo-prompt");
+const clearHistoryButton = document.querySelector("#clear-history");
 const historyList = document.querySelector("#history");
+const installGuideButton = document.querySelector("#install-guide");
 const latestSource = document.querySelector("#latest-source");
 const labelFilterInput = document.querySelector("#label-filter");
 const onboardingCard = document.querySelector("#onboarding");
@@ -67,6 +70,12 @@ document.addEventListener("DOMContentLoaded", () => { // Attach popup event list
   });
   clearButton.addEventListener("click", () => {
     clearHistory().catch(showError);
+  });
+  clearHistoryButton.addEventListener("click", () => {
+    clearHistory().catch(showError);
+  });
+  installGuideButton.addEventListener("click", () => {
+    openUrl(INSTALL_GUIDE_URL);
   });
   exportVisibleButton.addEventListener("click", () => {
     exportCaptures("visible").catch(showError);

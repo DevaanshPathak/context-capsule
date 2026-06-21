@@ -52,16 +52,17 @@ Using localhost avoids Chrome's file URL extension restrictions.
 8. Paste and confirm the fallback phrase appears in the formatted block.
 9. Reopen the popup with the toolbar icon.
 10. Confirm the popup shows total, pinned, fallback counts, last status, search, filters, and recent captures.
-11. Re-copy an older entry and paste it.
-12. Search history, filter pinned/fallback captures, and open a saved source URL.
-13. Start a capsule, append two pages, copy the capsule, and paste it into an editor.
-14. Pin, unpin, delete, and clear history entries.
-15. Switch between Markdown, Compact, and Prompt formats and capture once per preset.
-16. Switch between Smart, Selection, Clipboard, Page only, Visible text, and Readable text capture modes.
-17. Switch between None, Summarize, Debug, Explain docs, and Notes templates.
-18. Open Settings, change defaults, close and reopen the popup, and verify the saved defaults are applied.
-19. Add a project/tag, capture a page, and filter history by that label.
-20. Export visible history, all history, and active capsule in Markdown and JSON.
+11. Click `Install Guide` and confirm the install guide opens in a new tab.
+12. Re-copy an older entry and paste it.
+13. Search history, filter pinned/fallback captures, and open a saved source URL.
+14. Start a capsule, append two pages, copy the capsule, and paste it into an editor.
+15. Pin, unpin, delete, and clear history entries with `Clear History`.
+16. Switch between Markdown, Compact, and Prompt formats and capture once per preset.
+17. Switch between Smart, Selection, Clipboard, Page only, Visible text, and Readable text capture modes.
+18. Switch between None, Summarize, Debug, Explain docs, and Notes templates.
+19. Open Settings, change defaults, close and reopen the popup, and verify the saved defaults are applied.
+20. Add a project/tag, capture a page, and filter history by that label.
+21. Export visible history, all history, and active capsule in Markdown and JSON.
 
 ## Expected Output
 

@@ -80,7 +80,7 @@ For release installs, use the OS-specific guide in [`docs/install.md`](docs/inst
 
    - Clicking the toolbar icon opens the popup dashboard.
    - `Capture Current Page` captures the active page context.
-   - The popup can switch capture modes, apply prompt templates, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
+   - The popup can open the install guide, switch capture modes, apply prompt templates, show summary counts, search/filter history, open saved source URLs, switch format presets, re-copy, pin, delete, or clear history entries.
    - The popup can also collect multiple captures into an active capsule and copy them as one combined markdown prompt.
    - Open Settings from the popup to change defaults for capture mode, format, template, history limit, timestamp style, and fallback auto-pin.
    - Project and tag labels can be attached to captures and used to filter history.
@@ -213,6 +213,8 @@ Then open `http://localhost:8765/demo.html`. Serving over localhost avoids Chrom
 - Click into a page with no selected text, copy some fallback text manually, click `Capture Current Page`, then paste. The markdown body should contain the previous clipboard text.
 - Reopen the toolbar popup. It should show last capture status, summary counts, search/filter controls, and recent captures.
 - Click `Capture Current Page` again from the popup. It should run the same capture flow.
+- Click `Install Guide`. It should open the GitHub install guide in a new tab.
+- Click `Clear History`, cancel once, then confirm once after a test capture. The history list should empty.
 - Switch each capture mode and capture once. The pasted output should match the selected mode.
 - Click an older popup entry, then paste. That older markdown block should be copied back to the clipboard.
 - Search history, filter pinned/fallback captures, and open a saved source URL from the popup.
